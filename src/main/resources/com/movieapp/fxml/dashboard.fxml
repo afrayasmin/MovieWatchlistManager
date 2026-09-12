@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ListView?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.VBox?>
+
+<BorderPane xmlns="http://javafx.com/javafx"
+            xmlns:fx="http://javafx.com/fxml"
+            fx:controller="com.movieapp.controller.DashboardController"
+            styleClass="dashboard-root">
+
+    <top>
+        <VBox alignment="CENTER" styleClass="header">
+            <padding>
+                <Insets top="25" bottom="25"/>
+            </padding>
+            <Label text="🎬 MOVIE WATCHLIST MANAGER" styleClass="title-label"/>
+            <Label text="Your personal movie collection, organized." styleClass="subtitle-label"/>
+        </VBox>
+    </top>
+
+    <center>
+        <VBox spacing="25" alignment="TOP_CENTER">
+            <padding>
+                <Insets top="30" bottom="20" left="40" right="40"/>
+            </padding>
+
+            <!-- Stat Cards -->
+            <HBox spacing="20" alignment="CENTER">
+                <VBox styleClass="stat-card, card-blue" alignment="CENTER" spacing="5">
+                    <Label text="🎞" styleClass="card-icon"/>
+                    <Label fx:id="totalMoviesLabel" text="0" styleClass="card-number"/>
+                    <Label text="Total Movies" styleClass="card-caption"/>
+                </VBox>
+
+                <VBox styleClass="stat-card, card-green" alignment="CENTER" spacing="5">
+                    <Label text="✅" styleClass="card-icon"/>
+                    <Label fx:id="watchedLabel" text="0" styleClass="card-number"/>
+                    <Label text="Watched" styleClass="card-caption"/>
+                </VBox>
+
+                <VBox styleClass="stat-card, card-orange" alignment="CENTER" spacing="5">
+                    <Label text="🕒" styleClass="card-icon"/>
+                    <Label fx:id="unwatchedLabel" text="0" styleClass="card-number"/>
+                    <Label text="Unwatched" styleClass="card-caption"/>
+                </VBox>
+            </HBox>
+
+            <!-- Recent Movies -->
+            <VBox styleClass="recent-panel" spacing="8" maxWidth="600">
+                <Label text="Recently Added" styleClass="section-title"/>
+                <ListView fx:id="recentMoviesList" styleClass="recent-list" prefHeight="150"/>
+            </VBox>
+
+        </VBox>
+    </center>
+
+    <bottom>
+        <HBox alignment="CENTER" spacing="15" styleClass="button-bar">
+            <padding>
+                <Insets top="18" bottom="18"/>
+            </padding>
+            <Button text="➕  Add Movie" onAction="#handleAddMovie" styleClass="action-button"/>
+            <Button text="📋  View Movies" onAction="#handleViewMovies" styleClass="action-button"/>
+            <Button text="📊  Statistics" onAction="#handleStatistics" styleClass="action-button"/>
+        </HBox>
+    </bottom>
+
+</BorderPane>

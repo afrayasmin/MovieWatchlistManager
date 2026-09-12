@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.chart.PieChart?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.VBox?>
+
+<BorderPane xmlns="http://javafx.com/javafx"
+            xmlns:fx="http://javafx.com/fxml"
+            fx:controller="com.movieapp.controller.StatisticsController">
+
+    <top>
+        <VBox alignment="CENTER" styleClass="header">
+            <padding>
+                <Insets top="15" bottom="15"/>
+            </padding>
+            <Label text="Movie Statistics" styleClass="title-label"/>
+        </VBox>
+    </top>
+
+    <left>
+        <VBox spacing="15" alignment="TOP_LEFT" prefWidth="380">
+            <padding>
+                <Insets top="30" bottom="30" left="30" right="30"/>
+            </padding>
+
+            <Label fx:id="totalLabel" styleClass="stat-label" wrapText="true"/>
+            <Label fx:id="watchedLabel" styleClass="stat-label" wrapText="true"/>
+            <Label fx:id="unwatchedLabel" styleClass="stat-label" wrapText="true"/>
+            <Label fx:id="avgRatingLabel" styleClass="stat-label" wrapText="true"/>
+            <Label fx:id="avgMyRatingLabel" styleClass="stat-label" wrapText="true"/>
+            <Label fx:id="commonGenreLabel" styleClass="stat-label" wrapText="true"/>
+            <Label fx:id="highestRatedLabel" styleClass="stat-label" wrapText="true"/>
+        </VBox>
+    </left>
+
+    <center>
+        <PieChart fx:id="statusPieChart" prefWidth="400" prefHeight="400"/>
+    </center>
+
+    <bottom>
+        <HBox alignment="CENTER" styleClass="button-bar">
+            <padding>
+                <Insets top="15" bottom="15"/>
+            </padding>
+            <Button text="Back to Dashboard" onAction="#handleBack"/>
+        </HBox>
+    </bottom>
+
+</BorderPane>

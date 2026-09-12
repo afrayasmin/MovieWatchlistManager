@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.CheckBox?>
+<?import javafx.scene.control.ComboBox?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.TextArea?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.GridPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.VBox?>
+
+<BorderPane xmlns="http://javafx.com/javafx"
+            xmlns:fx="http://javafx.com/fxml"
+            fx:controller="com.movieapp.controller.AddMovieController">
+
+    <top>
+        <VBox alignment="CENTER" styleClass="header">
+            <padding>
+                <Insets top="15" bottom="15"/>
+            </padding>
+            <Label text="Add New Movie" styleClass="title-label"/>
+        </VBox>
+    </top>
+
+    <center>
+        <GridPane hgap="10" vgap="15" alignment="CENTER">
+            <padding>
+                <Insets top="30" bottom="30" left="50" right="50"/>
+            </padding>
+
+            <Label text="Title:" GridPane.rowIndex="0" GridPane.columnIndex="0"/>
+            <TextField fx:id="titleField" GridPane.rowIndex="0" GridPane.columnIndex="1"/>
+
+            <Label text="Genre:" GridPane.rowIndex="1" GridPane.columnIndex="0"/>
+            <ComboBox fx:id="genreCombo" GridPane.rowIndex="1" GridPane.columnIndex="1"/>
+
+            <Label text="Release Year:" GridPane.rowIndex="2" GridPane.columnIndex="0"/>
+            <TextField fx:id="yearField" GridPane.rowIndex="2" GridPane.columnIndex="1"/>
+
+            <Label text="IMDb Rating (0-10):" GridPane.rowIndex="3" GridPane.columnIndex="0"/>
+            <TextField fx:id="ratingField" GridPane.rowIndex="3" GridPane.columnIndex="1"/>
+
+            <Label text="My Rating (0-10):" GridPane.rowIndex="4" GridPane.columnIndex="0"/>
+            <TextField fx:id="myRatingField" promptText="Optional" GridPane.rowIndex="4" GridPane.columnIndex="1"/>
+
+            <Label text="Status:" GridPane.rowIndex="5" GridPane.columnIndex="0"/>
+            <ComboBox fx:id="statusCombo" GridPane.rowIndex="5" GridPane.columnIndex="1"/>
+
+            <Label text="Notes:" GridPane.rowIndex="6" GridPane.columnIndex="0"/>
+            <TextArea fx:id="notesArea" prefRowCount="3" GridPane.rowIndex="6" GridPane.columnIndex="1"/>
+
+            <CheckBox fx:id="favoriteCheckBox" text="Mark as Favorite ⭐"
+                      GridPane.rowIndex="7" GridPane.columnIndex="1"/>
+
+            <Label fx:id="errorLabel" styleClass="error-label"
+                   GridPane.rowIndex="8" GridPane.columnIndex="0" GridPane.columnSpan="2"/>
+
+        </GridPane>
+    </center>
+
+    <bottom>
+        <HBox alignment="CENTER" spacing="10" styleClass="button-bar">
+            <padding>
+                <Insets top="15" bottom="15"/>
+            </padding>
+            <Button text="Save" onAction="#handleSave"/>
+            <Button text="Cancel" onAction="#handleCancel"/>
+        </HBox>
+    </bottom>
+
+</BorderPane>

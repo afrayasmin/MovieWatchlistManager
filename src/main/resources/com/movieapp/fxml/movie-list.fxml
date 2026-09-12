@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.CheckBox?>
+<?import javafx.scene.control.ComboBox?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.TableColumn?>
+<?import javafx.scene.control.TableView?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.VBox?>
+
+<BorderPane xmlns="http://javafx.com/javafx"
+            xmlns:fx="http://javafx.com/fxml"
+            fx:controller="com.movieapp.controller.MovieListController">
+
+    <top>
+        <VBox spacing="10" styleClass="header">
+            <padding>
+                <Insets top="15" bottom="15" left="20" right="20"/>
+            </padding>
+            <Label text="Movie List" styleClass="title-label"/>
+
+            <HBox spacing="8" alignment="CENTER_LEFT">
+                <TextField fx:id="searchField" promptText="Search by title..." prefWidth="150"/>
+                <Button text="Search" onAction="#handleSearch"/>
+                <ComboBox fx:id="genreFilterCombo" prefWidth="110"/>
+                <ComboBox fx:id="statusFilterCombo" prefWidth="100"/>
+                <CheckBox fx:id="favoritesOnlyCheck" text="Favorites Only" textFill="WHITE"/>
+                <Button text="Apply Filter" onAction="#handleFilter"/>
+                <Button text="Reset" onAction="#handleReset"/>
+            </HBox>
+        </VBox>
+    </top>
+
+    <center>
+        <TableView fx:id="movieTable">
+            <columns>
+                <TableColumn fx:id="titleColumn" text="Title" prefWidth="150"/>
+                <TableColumn fx:id="genreColumn" text="Genre" prefWidth="85"/>
+                <TableColumn fx:id="yearColumn" text="Year" prefWidth="55"/>
+                <TableColumn fx:id="ratingColumn" text="IMDb" prefWidth="55"/>
+                <TableColumn fx:id="myRatingColumn" text="My Rating" prefWidth="70"/>
+                <TableColumn fx:id="statusColumn" text="Status" prefWidth="85"/>
+                <TableColumn fx:id="favoriteColumn" text="⭐" prefWidth="45"/>
+            </columns>
+        </TableView>
+    </center>
+
+    <bottom>
+        <HBox alignment="CENTER" spacing="10" styleClass="button-bar">
+            <padding>
+                <Insets top="15" bottom="15"/>
+            </padding>
+            <Button text="Add" onAction="#handleAdd"/>
+            <Button text="Edit" onAction="#handleEdit"/>
+            <Button text="Delete" onAction="#handleDelete"/>
+            <Button text="Toggle Watched" onAction="#handleToggleStatus"/>
+            <Button text="Toggle Favorite" onAction="#handleToggleFavorite"/>
+            <Button text="Back to Dashboard" onAction="#handleBack"/>
+        </HBox>
+    </bottom>
+
+</BorderPane>

@@ -1,0 +1,179 @@
+/* ===== General ===== */
+.root {
+    -fx-font-family: "Segoe UI", Arial, sans-serif;
+    -fx-background-color: #f4f6f8;
+}
+
+/* ===== Header ===== */
+.header {
+    -fx-background-color: linear-gradient(to right, #2c3e50, #34495e);
+}
+
+.title-label {
+    -fx-font-size: 24px;
+    -fx-font-weight: bold;
+    -fx-text-fill: white;
+}
+
+/* ===== Buttons ===== */
+.button {
+    -fx-font-size: 13px;
+    -fx-padding: 8px 16px;
+    -fx-background-color: #3498db;
+    -fx-text-fill: white;
+    -fx-background-radius: 5px;
+    -fx-cursor: hand;
+}
+
+.button:hover {
+    -fx-background-color: #2980b9;
+}
+
+.button:pressed {
+    -fx-background-color: #1c5980;
+}
+
+.button-bar {
+    -fx-background-color: #ecf0f1;
+    -fx-border-color: #dcdfe1;
+    -fx-border-width: 1px 0 0 0;
+}
+
+/* ===== Text fields / Combo boxes / Text areas ===== */
+.text-field, .combo-box, .text-area {
+    -fx-padding: 6px;
+    -fx-background-radius: 4px;
+    -fx-border-radius: 4px;
+    -fx-border-color: #cfd4d8;
+}
+
+.text-field:focused, .combo-box:focused, .text-area:focused {
+    -fx-border-color: #3498db;
+}
+
+/* ===== TableView ===== */
+.table-view {
+    -fx-background-color: white;
+    -fx-border-color: #dcdfe1;
+}
+
+.table-view .column-header-background {
+    -fx-background-color: #34495e;
+}
+
+.table-view .column-header, .table-view .filler {
+    -fx-background-color: transparent;
+}
+
+.table-view .column-header .label {
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+    -fx-alignment: CENTER_LEFT;
+}
+
+.table-row-cell {
+    -fx-background-color: white;
+    -fx-border-color: transparent transparent #eef0f2 transparent;
+}
+
+.table-row-cell:odd {
+    -fx-background-color: #f9fafb;
+}
+
+.table-row-cell:selected {
+    -fx-background-color: #d6eaf8;
+}
+
+/* ===== Labels for stats ===== */
+.stat-label {
+    -fx-font-size: 16px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #2c3e50;
+}
+
+/* ===== Error text ===== */
+.error-label {
+    -fx-text-fill: #e74c3c;
+    -fx-font-size: 12px;
+    -fx-font-weight: bold;
+}
+
+/* ===== Dashboard ===== */
+.dashboard-root {
+    -fx-background-color: #f4f6f8;
+}
+
+.subtitle-label {
+    -fx-font-size: 13px;
+    -fx-text-fill: #bfc9d1;
+}
+
+/* Stat cards */
+.stat-card {
+    -fx-background-radius: 12px;
+    -fx-padding: 20px 30px;
+    -fx-min-width: 150px;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.15), 10, 0, 0, 3);
+}
+
+.card-blue {
+    -fx-background-color: linear-gradient(to bottom right, #3498db, #2c81ba);
+}
+
+.card-green {
+    -fx-background-color: linear-gradient(to bottom right, #2ecc71, #27ae60);
+}
+
+.card-orange {
+    -fx-background-color: linear-gradient(to bottom right, #f39c12, #e67e22);
+}
+
+.card-icon {
+    -fx-font-size: 26px;
+}
+
+.card-number {
+    -fx-font-size: 30px;
+    -fx-font-weight: bold;
+    -fx-text-fill: white;
+}
+
+.card-caption {
+    -fx-font-size: 13px;
+    -fx-text-fill: rgba(255,255,255,0.9);
+}
+
+/* Recent movies panel */
+.recent-panel {
+    -fx-background-color: white;
+    -fx-background-radius: 10px;
+    -fx-padding: 15px;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.08), 8, 0, 0, 2);
+}
+
+.section-title {
+    -fx-font-size: 15px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #2c3e50;
+}
+
+.recent-list {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+}
+
+.recent-list .list-cell {
+    -fx-padding: 8px 6px;
+    -fx-font-size: 13px;
+}
+
+.recent-list .list-cell:filled:hover {
+    -fx-background-color: #f0f4f7;
+}
+
+/* Toolbar buttons on dashboard */
+.action-button {
+    -fx-font-size: 14px;
+    -fx-padding: 12px 24px;
+    -fx-background-radius: 8px;
+}
