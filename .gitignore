@@ -1,19 +1,23 @@
+@"
+# Compiled output
 target/
-!.mvn/wrapper/maven-wrapper.jar
-!**/src/main/**/target/
-!**/src/test/**/target/
-.kotlin
+*.class
+out/
 
-### IntelliJ IDEA ###
-.idea/modules.xml
-.idea/jarRepositories.xml
-.idea/compiler.xml
-.idea/libraries/
+# IntelliJ
+.idea/
 *.iws
 *.iml
 *.ipr
 
-### Eclipse ###
+# SQLite database (local test data, not source code)
+*.db
+movies.db
+
+# Maven wrapper jar should stay tracked
+!.mvn/wrapper/maven-wrapper.jar
+
+# Eclipse
 .apt_generated
 .classpath
 .factorypath
@@ -22,18 +26,13 @@ target/
 .springBeans
 .sts4-cache
 
-### NetBeans ###
-/nbproject/private/
-/nbbuild/
-/dist/
-/nbdist/
-/.nb-gradle/
-build/
-!**/src/main/**/build/
-!**/src/test/**/build/
-
-### VS Code ###
+# VS Code
 .vscode/
 
-### Mac OS ###
+# OS files
 .DS_Store
+Thumbs.db
+
+# Logs
+*.log
+"@ | Out-File -FilePath .gitignore -Encoding utf8
