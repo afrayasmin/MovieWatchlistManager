@@ -23,6 +23,7 @@ public class StatisticsController {
     @FXML private Label commonGenreLabel;
     @FXML private Label highestRatedLabel;
     @FXML private PieChart statusPieChart;
+    @FXML private PieChart genrePieChart;
 
     private final MovieDAO movieDAO = new MovieDAO();
 
@@ -54,6 +55,8 @@ public class StatisticsController {
                 .orElse(0);
         long ratedCount = movies.stream().filter(m -> m.getMyRating() > 0).count();
 
+        // LinkedHashMap-free grouping is fine here — genreCounts feeds both
+        // "Most Common Genre" and now the genre PieChart below.
         Map<String, Long> genreCounts = movies.stream()
                 .collect(Collectors.groupingBy(Movie::getGenre, Collectors.counting()));
         String mostCommonGenre = genreCounts.entrySet().stream()
@@ -86,6 +89,16 @@ public class StatisticsController {
         );
         statusPieChart.setData(pieData);
         statusPieChart.setTitle("Watch Status");
+
+        // Genre breakdown — one slice per genre that has at least one movie,
+        // sorted alphabetically by genre name for a stable, readable legend.
+        ObservableList<PieChart.Data> genreData = genreCounts.entrySet().stream()
+                .sorted(Map.Entry.comparingByKey())
+                .map(entry -> new PieChart.Data(entry.getKey() + " (" + entry.getValue() + ")", entry.getValue()))
+                .collect(Collectors.toCollection(FXCollections::observableArrayList));
+
+        genrePieChart.setData(genreData);
+        genrePieChart.setTitle("Genre Breakdown");
     }
 
     @FXML

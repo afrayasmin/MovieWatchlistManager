@@ -177,3 +177,114 @@
     -fx-padding: 12px 24px;
     -fx-background-radius: 8px;
 }
+
+/* ===== Button variants ===== */
+.button-secondary {
+    -fx-background-color: #95a5a6;
+}
+
+.button-secondary:hover {
+    -fx-background-color: #7f8c8d;
+}
+
+.button-secondary:pressed {
+    -fx-background-color: #6b7677;
+}
+
+.button-danger {
+    -fx-background-color: #e74c3c;
+}
+
+.button-danger:hover {
+    -fx-background-color: #c0392b;
+}
+
+.button-danger:pressed {
+    -fx-background-color: #a5281b;
+}
+
+/* ===== TableView refinements ===== */
+.table-view {
+    -fx-fixed-cell-size: 36px;
+}
+
+.table-row-cell {
+    -fx-cell-size: 36px;
+}
+
+.table-row-cell:hover {
+    -fx-background-color: #eef4f9;
+}
+
+.table-row-cell:hover:filled {
+    -fx-cursor: hand;
+}
+
+.table-cell {
+    -fx-alignment: CENTER_LEFT;
+    -fx-font-size: 13px;
+    -fx-padding: 4px 10px;
+}
+
+.align-right {
+    -fx-alignment: CENTER_RIGHT;
+}
+
+.align-center {
+    -fx-alignment: CENTER;
+}
+
+/* ===== Focus glow ===== */
+.text-field:focused, .combo-box:focused, .text-area:focused {
+    -fx-border-color: #3498db;
+    -fx-effect: dropshadow(gaussian, rgba(52,152,219,0.35), 6, 0, 0, 0);
+}
+
+/* ===== ComboBox popup list ===== */
+.combo-box-popup .list-view {
+    -fx-background-color: white;
+    -fx-border-color: #dcdfe1;
+}
+
+.combo-box-popup .list-cell {
+    -fx-padding: 6px 10px;
+    -fx-font-size: 13px;
+    -fx-text-fill: #2c3e50;
+    -fx-background-color: white;
+}
+
+.combo-box-popup .list-cell:hover {
+    -fx-background-color: #eef4f9;
+    -fx-text-fill: #2c3e50;
+}
+
+.combo-box-popup .list-cell:filled:selected {
+    -fx-background-color: #3498db;
+    -fx-text-fill: white;
+}
+
+.combo-box-popup .list-cell:filled:selected:hover {
+    -fx-background-color: #2980b9;
+    -fx-text-fill: white;
+}
+
+/* ===== Status label (Loading.../search results count) ===== */
+.status-label {
+    -fx-font-size: 11px;
+    -fx-text-fill: #bfc9d1;
+    -fx-font-style: italic;
+}
+
+/* ===== Scrollbar ===== */
+.scroll-bar {
+    -fx-background-color: transparent;
+}
+
+.scroll-bar .thumb {
+    -fx-background-color: #cfd4d8;
+    -fx-background-radius: 6px;
+}
+
+.scroll-bar .thumb:hover {
+    -fx-background-color: #b0b7bc;
+}

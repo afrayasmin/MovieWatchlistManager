@@ -38,7 +38,10 @@
     </left>
 
     <center>
-        <PieChart fx:id="statusPieChart" prefWidth="400" prefHeight="400"/>
+        <HBox spacing="10" alignment="CENTER">
+            <PieChart fx:id="statusPieChart" prefWidth="380" prefHeight="380"/>
+            <PieChart fx:id="genrePieChart" prefWidth="380" prefHeight="380"/>
+        </HBox>
     </center>
 
     <bottom>

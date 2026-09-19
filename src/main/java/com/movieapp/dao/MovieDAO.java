@@ -9,26 +9,40 @@ import java.util.List;
 
 public class MovieDAO {
 
+    private final GenreDAO genreDAO = new GenreDAO();
+
+    // Shared SELECT clause used by every read method: joins movies to
+    // genres so the genre's name is available under the alias "genre",
+    // keeping mapRowToMovie() unchanged.
+    private static final String BASE_SELECT = """
+        SELECT m.id, m.title, g.name AS genre, m.release_year, m.rating,
+               m.my_rating, m.date_added, m.status, m.notes, m.favorite
+        FROM movies m
+        JOIN genres g ON m.genre_id = g.id
+        """;
+
     // CREATE
     public boolean addMovie(Movie movie) {
-        String sql = "INSERT INTO movies (title, genre, release_year, rating, my_rating, date_added, status, notes, favorite) " +
+        String sql = "INSERT INTO movies (title, genre_id, release_year, rating, my_rating, date_added, status, notes, favorite) " +
                 "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
-        try (Connection conn = DatabaseConnection.connect();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
+        try (Connection conn = DatabaseConnection.connect()) {
+            int genreId = genreDAO.resolveGenreId(conn, movie.getGenre());
 
-            ps.setString(1, movie.getTitle());
-            ps.setString(2, movie.getGenre());
-            ps.setInt(3, movie.getReleaseYear());
-            ps.setDouble(4, movie.getRating());
-            ps.setDouble(5, movie.getMyRating());
-            ps.setString(6, movie.getDateAdded());
-            ps.setString(7, movie.getStatus());
-            ps.setString(8, movie.getNotes());
-            ps.setInt(9, movie.isFavorite() ? 1 : 0);
+            try (PreparedStatement ps = conn.prepareStatement(sql)) {
+                ps.setString(1, movie.getTitle());
+                ps.setInt(2, genreId);
+                ps.setInt(3, movie.getReleaseYear());
+                ps.setDouble(4, movie.getRating());
+                ps.setDouble(5, movie.getMyRating());
+                ps.setString(6, movie.getDateAdded());
+                ps.setString(7, movie.getStatus());
+                ps.setString(8, movie.getNotes());
+                ps.setInt(9, movie.isFavorite() ? 1 : 0);
 
-            ps.executeUpdate();
-            return true;
+                ps.executeUpdate();
+                return true;
+            }
 
         } catch (SQLException e) {
             System.out.println("Error adding movie: " + e.getMessage());
@@ -39,7 +53,7 @@ public class MovieDAO {
     // READ — all movies
     public List<Movie> getAllMovies() {
         List<Movie> movies = new ArrayList<>();
-        String sql = "SELECT * FROM movies ORDER BY id DESC";
+        String sql = BASE_SELECT + " ORDER BY m.id DESC";
 
         try (Connection conn = DatabaseConnection.connect();
              Statement stmt = conn.createStatement();
@@ -59,7 +73,7 @@ public class MovieDAO {
     // READ — search by title
     public List<Movie> searchMovies(String keyword) {
         List<Movie> movies = new ArrayList<>();
-        String sql = "SELECT * FROM movies WHERE title LIKE ? ORDER BY id DESC";
+        String sql = BASE_SELECT + " WHERE m.title LIKE ? ORDER BY m.id DESC";
 
         try (Connection conn = DatabaseConnection.connect();
              PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -81,18 +95,18 @@ public class MovieDAO {
     // READ — filter by genre and/or status and/or favorites
     public List<Movie> filterMovies(String genre, String status, boolean favoritesOnly) {
         List<Movie> movies = new ArrayList<>();
-        StringBuilder sql = new StringBuilder("SELECT * FROM movies WHERE 1=1");
+        StringBuilder sql = new StringBuilder(BASE_SELECT + " WHERE 1=1");
 
         if (genre != null && !genre.equals("All")) {
-            sql.append(" AND genre = ?");
+            sql.append(" AND g.name = ?");
         }
         if (status != null && !status.equals("All")) {
-            sql.append(" AND status = ?");
+            sql.append(" AND m.status = ?");
         }
         if (favoritesOnly) {
-            sql.append(" AND favorite = 1");
+            sql.append(" AND m.favorite = 1");
         }
-        sql.append(" ORDER BY id DESC");
+        sql.append(" ORDER BY m.id DESC");
 
         try (Connection conn = DatabaseConnection.connect();
              PreparedStatement ps = conn.prepareStatement(sql.toString())) {
@@ -119,24 +133,26 @@ public class MovieDAO {
 
     // UPDATE
     public boolean updateMovie(Movie movie) {
-        String sql = "UPDATE movies SET title = ?, genre = ?, release_year = ?, rating = ?, my_rating = ?, " +
+        String sql = "UPDATE movies SET title = ?, genre_id = ?, release_year = ?, rating = ?, my_rating = ?, " +
                 "status = ?, notes = ?, favorite = ? WHERE id = ?";
 
-        try (Connection conn = DatabaseConnection.connect();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
+        try (Connection conn = DatabaseConnection.connect()) {
+            int genreId = genreDAO.resolveGenreId(conn, movie.getGenre());
 
-            ps.setString(1, movie.getTitle());
-            ps.setString(2, movie.getGenre());
-            ps.setInt(3, movie.getReleaseYear());
-            ps.setDouble(4, movie.getRating());
-            ps.setDouble(5, movie.getMyRating());
-            ps.setString(6, movie.getStatus());
-            ps.setString(7, movie.getNotes());
-            ps.setInt(8, movie.isFavorite() ? 1 : 0);
-            ps.setInt(9, movie.getId());
+            try (PreparedStatement ps = conn.prepareStatement(sql)) {
+                ps.setString(1, movie.getTitle());
+                ps.setInt(2, genreId);
+                ps.setInt(3, movie.getReleaseYear());
+                ps.setDouble(4, movie.getRating());
+                ps.setDouble(5, movie.getMyRating());
+                ps.setString(6, movie.getStatus());
+                ps.setString(7, movie.getNotes());
+                ps.setInt(8, movie.isFavorite() ? 1 : 0);
+                ps.setInt(9, movie.getId());
 
-            int rows = ps.executeUpdate();
-            return rows > 0;
+                int rows = ps.executeUpdate();
+                return rows > 0;
+            }
 
         } catch (SQLException e) {
             System.out.println("Error updating movie: " + e.getMessage());
@@ -161,8 +177,7 @@ public class MovieDAO {
         }
     }
 
-    // Toggle to Unwatched — always clears the personal rating,
-    // since an unwatched movie should never carry a rating.
+    // Toggle to Unwatched — always clears the personal rating.
     public boolean toggleStatus(int id, String newStatus) {
         boolean clearingRating = "Unwatched".equals(newStatus);
         String sql = clearingRating
@@ -184,9 +199,7 @@ public class MovieDAO {
         }
     }
 
-    // Mark a movie as Watched AND set its personal rating in one step —
-    // used when toggling Unwatched -> Watched from the list screen, where
-    // the user is prompted for a rating at the moment of toggling.
+    // Mark a movie as Watched AND set its personal rating in one step.
     public boolean markWatchedWithRating(int id, double myRating) {
         String sql = "UPDATE movies SET status = 'Watched', my_rating = ? WHERE id = ?";
 
@@ -224,7 +237,9 @@ public class MovieDAO {
         }
     }
 
-    // Helper — converts one ResultSet row into a Movie object
+    // Helper — converts one ResultSet row into a Movie object.
+    // Unchanged from before: "genre" here comes from the genres table via
+    // the JOIN, not from the old movies.genre text column.
     private Movie mapRowToMovie(ResultSet rs) throws SQLException {
         return new Movie(
                 rs.getInt("id"),

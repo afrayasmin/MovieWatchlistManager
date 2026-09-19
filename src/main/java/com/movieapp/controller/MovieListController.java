@@ -2,15 +2,18 @@ package com.movieapp.controller;
 
 import com.movieapp.Main;
 import com.movieapp.dao.MovieDAO;
+import com.movieapp.database.DatabaseActivityMonitor;
 import com.movieapp.model.Movie;
 import javafx.collections.FXCollections;
-import javafx.collections.ObservableList;
+import javafx.concurrent.Task;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class MovieListController {
 
@@ -27,8 +30,20 @@ public class MovieListController {
     @FXML private ComboBox<String> genreFilterCombo;
     @FXML private ComboBox<String> statusFilterCombo;
     @FXML private CheckBox favoritesOnlyCheck;
+    @FXML private Label statusLabel;
 
     private final MovieDAO movieDAO = new MovieDAO();
+
+    // A small thread pool that runs every database operation (reads AND writes)
+    // off the JavaFX Application Thread, so nothing about talking to SQLite
+    // ever freezes the UI. A single named worker thread is plenty for this
+    // app's scale — operations are queued and run one after another, which
+    // also avoids concurrent writes to the same SQLite file.
+    private final ExecutorService dbExecutor = Executors.newSingleThreadExecutor(runnable -> {
+        Thread t = new Thread(runnable, "db-worker");
+        t.setDaemon(true);
+        return t;
+    });
 
     @FXML
     public void initialize() {
@@ -41,7 +56,7 @@ public class MovieListController {
         favoriteColumn.setCellValueFactory(new PropertyValueFactory<>("favoriteDisplay"));
 
         genreFilterCombo.setItems(FXCollections.observableArrayList(
-                "All", "Action", "Comedy", "Drama", "Horror", "Sci-Fi", "Thriller", "Animation"
+                "All", "Action", "Comedy", "Drama", "Horror", "Sci-Fi", "Thriller", "Animation", "Romantic"
         ));
         genreFilterCombo.setValue("All");
 
@@ -51,9 +66,48 @@ public class MovieListController {
         loadAllMovies();
     }
 
+    // ---------- READ operations ----------
+
+    // Submits a database query as a background Task, then safely applies the
+    // result back on the JavaFX Application Thread once it completes.
+    // Task's onSucceeded/onFailed callbacks are guaranteed to run on the UI
+    // thread, which is what makes this safe without manual Platform.runLater.
+    private void runQueryInBackground(Task<List<Movie>> task) {
+        movieTable.setDisable(true);
+        statusLabel.setText("Loading...");
+
+        task.setOnSucceeded(event -> {
+            List<Movie> result = task.getValue();
+            movieTable.setItems(FXCollections.observableArrayList(result));
+            movieTable.setDisable(false);
+            statusLabel.setText(result.size() + " movie(s)");
+        });
+
+        task.setOnFailed(event -> {
+            movieTable.setDisable(false);
+            statusLabel.setText("Failed to load movies.");
+            Throwable ex = task.getException();
+            if (ex != null) {
+                ex.printStackTrace();
+            }
+        });
+
+        dbExecutor.submit(task);
+    }
+
     private void loadAllMovies() {
-        List<Movie> movies = movieDAO.getAllMovies();
-        movieTable.setItems(FXCollections.observableArrayList(movies));
+        Task<List<Movie>> task = new Task<>() {
+            @Override
+            protected List<Movie> call() {
+                DatabaseActivityMonitor.operationStarted();
+                try {
+                    return movieDAO.getAllMovies();
+                } finally {
+                    DatabaseActivityMonitor.operationFinished();
+                }
+            }
+        };
+        runQueryInBackground(task);
     }
 
     @FXML
@@ -63,8 +117,19 @@ public class MovieListController {
             loadAllMovies();
             return;
         }
-        ObservableList<Movie> results = FXCollections.observableArrayList(movieDAO.searchMovies(keyword));
-        movieTable.setItems(results);
+
+        Task<List<Movie>> task = new Task<>() {
+            @Override
+            protected List<Movie> call() {
+                DatabaseActivityMonitor.operationStarted();
+                try {
+                    return movieDAO.searchMovies(keyword);
+                } finally {
+                    DatabaseActivityMonitor.operationFinished();
+                }
+            }
+        };
+        runQueryInBackground(task);
     }
 
     @FXML
@@ -72,9 +137,19 @@ public class MovieListController {
         String genre = genreFilterCombo.getValue();
         String status = statusFilterCombo.getValue();
         boolean favoritesOnly = favoritesOnlyCheck.isSelected();
-        ObservableList<Movie> results = FXCollections.observableArrayList(
-                movieDAO.filterMovies(genre, status, favoritesOnly));
-        movieTable.setItems(results);
+
+        Task<List<Movie>> task = new Task<>() {
+            @Override
+            protected List<Movie> call() {
+                DatabaseActivityMonitor.operationStarted();
+                try {
+                    return movieDAO.filterMovies(genre, status, favoritesOnly);
+                } finally {
+                    DatabaseActivityMonitor.operationFinished();
+                }
+            }
+        };
+        runQueryInBackground(task);
     }
 
     @FXML
@@ -84,6 +159,36 @@ public class MovieListController {
         statusFilterCombo.setValue("All");
         favoritesOnlyCheck.setSelected(false);
         loadAllMovies();
+    }
+
+    // ---------- WRITE operations ----------
+
+    // Submits a database write (delete/toggle/etc.) as a background Task.
+    // On success, reloads the table (itself threaded) so the UI reflects the
+    // change. On failure, shows the given error message on the UI thread.
+    private void runWriteInBackground(Task<Boolean> task, String failureMessage) {
+        statusLabel.setText("Saving...");
+
+        task.setOnSucceeded(event -> {
+            boolean success = task.getValue();
+            if (success) {
+                loadAllMovies();
+            } else {
+                statusLabel.setText("");
+                showAlert(Alert.AlertType.ERROR, failureMessage);
+            }
+        });
+
+        task.setOnFailed(event -> {
+            statusLabel.setText("");
+            showAlert(Alert.AlertType.ERROR, failureMessage);
+            Throwable ex = task.getException();
+            if (ex != null) {
+                ex.printStackTrace();
+            }
+        });
+
+        dbExecutor.submit(task);
     }
 
     @FXML
@@ -126,12 +231,18 @@ public class MovieListController {
 
         confirm.showAndWait().ifPresent(response -> {
             if (response == ButtonType.OK) {
-                boolean success = movieDAO.deleteMovie(selected.getId());
-                if (success) {
-                    loadAllMovies();
-                } else {
-                    showAlert(Alert.AlertType.ERROR, "Failed to delete movie.");
-                }
+                Task<Boolean> task = new Task<>() {
+                    @Override
+                    protected Boolean call() {
+                        DatabaseActivityMonitor.operationStarted();
+                        try {
+                            return movieDAO.deleteMovie(selected.getId());
+                        } finally {
+                            DatabaseActivityMonitor.operationFinished();
+                        }
+                    }
+                };
+                runWriteInBackground(task, "Failed to delete movie.");
             }
         });
     }
@@ -147,7 +258,6 @@ public class MovieListController {
         boolean switchingToWatched = "Unwatched".equals(selected.getStatus());
 
         if (switchingToWatched) {
-            // Ask the user for a personal rating right when they mark it Watched
             TextInputDialog dialog = new TextInputDialog();
             dialog.setTitle("Mark as Watched");
             dialog.setHeaderText("Rate \"" + selected.getTitle() + "\"");
@@ -155,7 +265,6 @@ public class MovieListController {
 
             Optional<String> result = dialog.showAndWait();
             if (result.isEmpty()) {
-                // User cancelled — don't change the status at all
                 return;
             }
 
@@ -171,21 +280,33 @@ public class MovieListController {
                 return;
             }
 
-            boolean success = movieDAO.markWatchedWithRating(selected.getId(), myRating);
-            if (success) {
-                loadAllMovies();
-            } else {
-                showAlert(Alert.AlertType.ERROR, "Failed to update status.");
-            }
+            double finalRating = myRating;
+            Task<Boolean> task = new Task<>() {
+                @Override
+                protected Boolean call() {
+                    DatabaseActivityMonitor.operationStarted();
+                    try {
+                        return movieDAO.markWatchedWithRating(selected.getId(), finalRating);
+                    } finally {
+                        DatabaseActivityMonitor.operationFinished();
+                    }
+                }
+            };
+            runWriteInBackground(task, "Failed to update status.");
 
         } else {
-            // Switching to Unwatched — rating is cleared automatically in the DAO
-            boolean success = movieDAO.toggleStatus(selected.getId(), "Unwatched");
-            if (success) {
-                loadAllMovies();
-            } else {
-                showAlert(Alert.AlertType.ERROR, "Failed to update status.");
-            }
+            Task<Boolean> task = new Task<>() {
+                @Override
+                protected Boolean call() {
+                    DatabaseActivityMonitor.operationStarted();
+                    try {
+                        return movieDAO.toggleStatus(selected.getId(), "Unwatched");
+                    } finally {
+                        DatabaseActivityMonitor.operationFinished();
+                    }
+                }
+            };
+            runWriteInBackground(task, "Failed to update status.");
         }
     }
 
@@ -197,16 +318,25 @@ public class MovieListController {
             return;
         }
 
-        boolean success = movieDAO.toggleFavorite(selected.getId(), !selected.isFavorite());
-        if (success) {
-            loadAllMovies();
-        } else {
-            showAlert(Alert.AlertType.ERROR, "Failed to update favorite.");
-        }
+        Task<Boolean> task = new Task<>() {
+            @Override
+            protected Boolean call() {
+                DatabaseActivityMonitor.operationStarted();
+                try {
+                    return movieDAO.toggleFavorite(selected.getId(), !selected.isFavorite());
+                } finally {
+                    DatabaseActivityMonitor.operationFinished();
+                }
+            }
+        };
+        runWriteInBackground(task, "Failed to update favorite.");
     }
 
     @FXML
     private void handleBack() {
+        // Shut the thread pool down cleanly when leaving this screen —
+        // a new one is created if the user navigates back here again.
+        dbExecutor.shutdown();
         try {
             Main.switchScene("/com/movieapp/fxml/dashboard.fxml", "Movie Watchlist Manager");
         } catch (Exception e) {

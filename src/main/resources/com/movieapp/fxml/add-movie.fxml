@@ -66,8 +66,8 @@
             <padding>
                 <Insets top="15" bottom="15"/>
             </padding>
-            <Button text="Save" onAction="#handleSave"/>
-            <Button text="Cancel" onAction="#handleCancel"/>
+            <Button fx:id="saveButton" text="Save" onAction="#handleSave"/>
+            <Button text="Cancel" onAction="#handleCancel" styleClass="button-secondary"/>
         </HBox>
     </bottom>
 
