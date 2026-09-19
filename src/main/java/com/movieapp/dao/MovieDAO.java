@@ -161,9 +161,13 @@ public class MovieDAO {
         }
     }
 
-    // Toggle watched/unwatched
+    // Toggle to Unwatched — always clears the personal rating,
+    // since an unwatched movie should never carry a rating.
     public boolean toggleStatus(int id, String newStatus) {
-        String sql = "UPDATE movies SET status = ? WHERE id = ?";
+        boolean clearingRating = "Unwatched".equals(newStatus);
+        String sql = clearingRating
+                ? "UPDATE movies SET status = ?, my_rating = 0 WHERE id = ?"
+                : "UPDATE movies SET status = ? WHERE id = ?";
 
         try (Connection conn = DatabaseConnection.connect();
              PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -176,6 +180,27 @@ public class MovieDAO {
 
         } catch (SQLException e) {
             System.out.println("Error updating status: " + e.getMessage());
+            return false;
+        }
+    }
+
+    // Mark a movie as Watched AND set its personal rating in one step —
+    // used when toggling Unwatched -> Watched from the list screen, where
+    // the user is prompted for a rating at the moment of toggling.
+    public boolean markWatchedWithRating(int id, double myRating) {
+        String sql = "UPDATE movies SET status = 'Watched', my_rating = ? WHERE id = ?";
+
+        try (Connection conn = DatabaseConnection.connect();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setDouble(1, myRating);
+            ps.setInt(2, id);
+
+            int rows = ps.executeUpdate();
+            return rows > 0;
+
+        } catch (SQLException e) {
+            System.out.println("Error marking movie watched: " + e.getMessage());
             return false;
         }
     }

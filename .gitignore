@@ -1,5 +1,4 @@
-@"
-# Compiled output
+﻿# Compiled output
 target/
 *.class
 out/
@@ -32,7 +31,7 @@ movies.db
 # OS files
 .DS_Store
 Thumbs.db
+desktop.ini
 
 # Logs
 *.log
-"@ | Out-File -FilePath .gitignore -Encoding utf8

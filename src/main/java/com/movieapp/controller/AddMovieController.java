@@ -31,6 +31,21 @@ public class AddMovieController {
         ));
         statusCombo.setItems(FXCollections.observableArrayList("Watched", "Unwatched"));
         statusCombo.setValue("Unwatched");
+
+        // Personal rating is only relevant once a movie is marked Watched
+        statusCombo.valueProperty().addListener((obs, oldVal, newVal) -> updateMyRatingFieldState(newVal));
+        updateMyRatingFieldState(statusCombo.getValue());
+    }
+
+    private void updateMyRatingFieldState(String status) {
+        boolean watched = "Watched".equals(status);
+        myRatingField.setDisable(!watched);
+        if (!watched) {
+            myRatingField.clear();
+            myRatingField.setPromptText("Not watched yet");
+        } else {
+            myRatingField.setPromptText("Optional");
+        }
     }
 
     public void setEditMovie(Movie movie) {
@@ -40,8 +55,14 @@ public class AddMovieController {
         genreCombo.setValue(movie.getGenre());
         yearField.setText(String.valueOf(movie.getReleaseYear()));
         ratingField.setText(String.valueOf(movie.getRating()));
-        myRatingField.setText(movie.getMyRating() > 0 ? String.valueOf(movie.getMyRating()) : "");
+
+        // Setting statusCombo triggers the listener above, which enables/disables
+        // and clears myRatingField as needed — so set status BEFORE the rating text.
         statusCombo.setValue(movie.getStatus());
+        if ("Watched".equals(movie.getStatus())) {
+            myRatingField.setText(movie.getMyRating() > 0 ? String.valueOf(movie.getMyRating()) : "");
+        }
+
         notesArea.setText(movie.getNotes());
         favoriteCheckBox.setSelected(movie.isFavorite());
     }
@@ -86,26 +107,29 @@ public class AddMovieController {
             return;
         }
 
-        // My Rating is optional — blank is treated as "not rated yet" (0)
-        double myRating = 0;
-        String myRatingText = myRatingField.getText().trim();
-        if (!myRatingText.isEmpty()) {
-            try {
-                myRating = Double.parseDouble(myRatingText);
-                if (myRating < 0 || myRating > 10) {
-                    errorLabel.setText("My rating must be between 0 and 10.");
-                    return;
-                }
-            } catch (NumberFormatException e) {
-                errorLabel.setText("My rating must be a number.");
-                return;
-            }
-        }
-
         String status = statusCombo.getValue();
         if (status == null) {
             errorLabel.setText("Please select a status.");
             return;
+        }
+
+        // My Rating is only allowed when the movie is Watched.
+        // Unwatched movies always save with myRating = 0 (treated as "no rating" by the model).
+        double myRating = 0;
+        if ("Watched".equals(status)) {
+            String myRatingText = myRatingField.getText().trim();
+            if (!myRatingText.isEmpty()) {
+                try {
+                    myRating = Double.parseDouble(myRatingText);
+                    if (myRating < 0 || myRating > 10) {
+                        errorLabel.setText("My rating must be between 0 and 10.");
+                        return;
+                    }
+                } catch (NumberFormatException e) {
+                    errorLabel.setText("My rating must be a number.");
+                    return;
+                }
+            }
         }
 
         String notes = notesArea.getText().trim();

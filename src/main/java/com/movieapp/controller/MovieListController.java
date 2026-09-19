@@ -10,6 +10,7 @@ import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
 
 import java.util.List;
+import java.util.Optional;
 
 public class MovieListController {
 
@@ -143,12 +144,48 @@ public class MovieListController {
             return;
         }
 
-        String newStatus = selected.getStatus().equals("Watched") ? "Unwatched" : "Watched";
-        boolean success = movieDAO.toggleStatus(selected.getId(), newStatus);
-        if (success) {
-            loadAllMovies();
+        boolean switchingToWatched = "Unwatched".equals(selected.getStatus());
+
+        if (switchingToWatched) {
+            // Ask the user for a personal rating right when they mark it Watched
+            TextInputDialog dialog = new TextInputDialog();
+            dialog.setTitle("Mark as Watched");
+            dialog.setHeaderText("Rate \"" + selected.getTitle() + "\"");
+            dialog.setContentText("My Rating (0-10):");
+
+            Optional<String> result = dialog.showAndWait();
+            if (result.isEmpty()) {
+                // User cancelled — don't change the status at all
+                return;
+            }
+
+            double myRating;
+            try {
+                myRating = Double.parseDouble(result.get().trim());
+                if (myRating < 0 || myRating > 10) {
+                    showAlert(Alert.AlertType.ERROR, "Rating must be between 0 and 10.");
+                    return;
+                }
+            } catch (NumberFormatException e) {
+                showAlert(Alert.AlertType.ERROR, "Rating must be a number.");
+                return;
+            }
+
+            boolean success = movieDAO.markWatchedWithRating(selected.getId(), myRating);
+            if (success) {
+                loadAllMovies();
+            } else {
+                showAlert(Alert.AlertType.ERROR, "Failed to update status.");
+            }
+
         } else {
-            showAlert(Alert.AlertType.ERROR, "Failed to update status.");
+            // Switching to Unwatched — rating is cleared automatically in the DAO
+            boolean success = movieDAO.toggleStatus(selected.getId(), "Unwatched");
+            if (success) {
+                loadAllMovies();
+            } else {
+                showAlert(Alert.AlertType.ERROR, "Failed to update status.");
+            }
         }
     }
 
