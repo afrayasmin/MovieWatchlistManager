@@ -1,20 +1,19 @@
 package com.movieapp.dao;
 
-import com.movieapp.database.DatabaseConnection;
 import com.movieapp.model.Genre;
 
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 
-public class GenreDAO {
+public class GenreDAO extends BaseDAO {
 
     // READ — all genres
     public List<Genre> getAllGenres() {
         List<Genre> genres = new ArrayList<>();
         String sql = "SELECT * FROM genres ORDER BY name";
 
-        try (Connection conn = DatabaseConnection.connect();
+        try (Connection conn = connect();
              Statement stmt = conn.createStatement();
              ResultSet rs = stmt.executeQuery(sql)) {
 
@@ -23,7 +22,7 @@ public class GenreDAO {
             }
 
         } catch (SQLException e) {
-            System.out.println("Error fetching genres: " + e.getMessage());
+            logError("fetching genres", e);
         }
 
         return genres;
@@ -32,6 +31,9 @@ public class GenreDAO {
     // Look up a genre's id by name. If it doesn't exist yet, create it.
     // This is what lets MovieDAO resolve a genre name (e.g. "Action") from
     // the Add/Edit form into the correct foreign key value to store.
+    // Note: takes the connection as a parameter rather than calling connect()
+    // itself, since it must run inside MovieDAO's existing transaction/connection
+    // when resolving a genre as part of an add/update.
     public int resolveGenreId(Connection conn, String genreName) throws SQLException {
         String selectSql = "SELECT id FROM genres WHERE name = ?";
         try (PreparedStatement ps = conn.prepareStatement(selectSql)) {

@@ -1,13 +1,12 @@
 package com.movieapp.dao;
 
-import com.movieapp.database.DatabaseConnection;
 import com.movieapp.model.Movie;
 
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 
-public class MovieDAO implements Crud<Movie> {
+public class MovieDAO extends BaseDAO implements Crud<Movie> {
 
     private final GenreDAO genreDAO = new GenreDAO();
 
@@ -29,7 +28,7 @@ public class MovieDAO implements Crud<Movie> {
         String sql = "INSERT INTO movies (title, genre_id, release_year, rating, my_rating, date_added, status, notes, favorite) " +
                 "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
-        try (Connection conn = DatabaseConnection.connect()) {
+        try (Connection conn = connect()) {
             int genreId = genreDAO.resolveGenreId(conn, movie.getGenre());
 
             try (PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -48,7 +47,7 @@ public class MovieDAO implements Crud<Movie> {
             }
 
         } catch (SQLException e) {
-            System.out.println("Error adding movie: " + e.getMessage());
+            logError("adding movie", e);
             return false;
         }
     }
@@ -59,7 +58,7 @@ public class MovieDAO implements Crud<Movie> {
         List<Movie> movies = new ArrayList<>();
         String sql = BASE_SELECT + " ORDER BY m.id DESC";
 
-        try (Connection conn = DatabaseConnection.connect();
+        try (Connection conn = connect();
              Statement stmt = conn.createStatement();
              ResultSet rs = stmt.executeQuery(sql)) {
 
@@ -68,7 +67,7 @@ public class MovieDAO implements Crud<Movie> {
             }
 
         } catch (SQLException e) {
-            System.out.println("Error fetching movies: " + e.getMessage());
+            logError("fetching movies", e);
         }
 
         return movies;
@@ -80,7 +79,7 @@ public class MovieDAO implements Crud<Movie> {
         String sql = "UPDATE movies SET title = ?, genre_id = ?, release_year = ?, rating = ?, my_rating = ?, " +
                 "status = ?, notes = ?, favorite = ? WHERE id = ?";
 
-        try (Connection conn = DatabaseConnection.connect()) {
+        try (Connection conn = connect()) {
             int genreId = genreDAO.resolveGenreId(conn, movie.getGenre());
 
             try (PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -99,7 +98,7 @@ public class MovieDAO implements Crud<Movie> {
             }
 
         } catch (SQLException e) {
-            System.out.println("Error updating movie: " + e.getMessage());
+            logError("updating movie", e);
             return false;
         }
     }
@@ -109,7 +108,7 @@ public class MovieDAO implements Crud<Movie> {
     public boolean delete(int id) {
         String sql = "DELETE FROM movies WHERE id = ?";
 
-        try (Connection conn = DatabaseConnection.connect();
+        try (Connection conn = connect();
              PreparedStatement ps = conn.prepareStatement(sql)) {
 
             ps.setInt(1, id);
@@ -117,7 +116,7 @@ public class MovieDAO implements Crud<Movie> {
             return rows > 0;
 
         } catch (SQLException e) {
-            System.out.println("Error deleting movie: " + e.getMessage());
+            logError("deleting movie", e);
             return false;
         }
     }
@@ -149,7 +148,7 @@ public class MovieDAO implements Crud<Movie> {
         List<Movie> movies = new ArrayList<>();
         String sql = BASE_SELECT + " WHERE m.title LIKE ? ORDER BY m.id DESC";
 
-        try (Connection conn = DatabaseConnection.connect();
+        try (Connection conn = connect();
              PreparedStatement ps = conn.prepareStatement(sql)) {
 
             ps.setString(1, "%" + keyword + "%");
@@ -160,7 +159,7 @@ public class MovieDAO implements Crud<Movie> {
             }
 
         } catch (SQLException e) {
-            System.out.println("Error searching movies: " + e.getMessage());
+            logError("searching movies", e);
         }
 
         return movies;
@@ -182,7 +181,7 @@ public class MovieDAO implements Crud<Movie> {
         }
         sql.append(" ORDER BY m.id DESC");
 
-        try (Connection conn = DatabaseConnection.connect();
+        try (Connection conn = connect();
              PreparedStatement ps = conn.prepareStatement(sql.toString())) {
 
             int index = 1;
@@ -199,7 +198,7 @@ public class MovieDAO implements Crud<Movie> {
             }
 
         } catch (SQLException e) {
-            System.out.println("Error filtering movies: " + e.getMessage());
+            logError("filtering movies", e);
         }
 
         return movies;
@@ -212,7 +211,7 @@ public class MovieDAO implements Crud<Movie> {
                 ? "UPDATE movies SET status = ?, my_rating = 0 WHERE id = ?"
                 : "UPDATE movies SET status = ? WHERE id = ?";
 
-        try (Connection conn = DatabaseConnection.connect();
+        try (Connection conn = connect();
              PreparedStatement ps = conn.prepareStatement(sql)) {
 
             ps.setString(1, newStatus);
@@ -222,7 +221,7 @@ public class MovieDAO implements Crud<Movie> {
             return rows > 0;
 
         } catch (SQLException e) {
-            System.out.println("Error updating status: " + e.getMessage());
+            logError("updating status", e);
             return false;
         }
     }
@@ -231,7 +230,7 @@ public class MovieDAO implements Crud<Movie> {
     public boolean markWatchedWithRating(int id, double myRating) {
         String sql = "UPDATE movies SET status = 'Watched', my_rating = ? WHERE id = ?";
 
-        try (Connection conn = DatabaseConnection.connect();
+        try (Connection conn = connect();
              PreparedStatement ps = conn.prepareStatement(sql)) {
 
             ps.setDouble(1, myRating);
@@ -241,7 +240,7 @@ public class MovieDAO implements Crud<Movie> {
             return rows > 0;
 
         } catch (SQLException e) {
-            System.out.println("Error marking movie watched: " + e.getMessage());
+            logError("marking movie watched", e);
             return false;
         }
     }
@@ -250,7 +249,7 @@ public class MovieDAO implements Crud<Movie> {
     public boolean toggleFavorite(int id, boolean newFavorite) {
         String sql = "UPDATE movies SET favorite = ? WHERE id = ?";
 
-        try (Connection conn = DatabaseConnection.connect();
+        try (Connection conn = connect();
              PreparedStatement ps = conn.prepareStatement(sql)) {
 
             ps.setInt(1, newFavorite ? 1 : 0);
@@ -260,7 +259,7 @@ public class MovieDAO implements Crud<Movie> {
             return rows > 0;
 
         } catch (SQLException e) {
-            System.out.println("Error updating favorite: " + e.getMessage());
+            logError("updating favorite", e);
             return false;
         }
     }
