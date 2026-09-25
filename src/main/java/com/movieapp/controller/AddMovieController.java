@@ -3,24 +3,27 @@ package com.movieapp.controller;
 import com.movieapp.dao.MovieDAO;
 import com.movieapp.database.DatabaseActivityMonitor;
 import com.movieapp.model.Movie;
+import com.movieapp.model.OmdbMovieResult;
+import com.movieapp.service.OmdbService;
 import javafx.collections.FXCollections;
 import javafx.concurrent.Task;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
 
+import java.io.IOException;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class AddMovieController {
 
-    // Set to 0 before final submission if you don't want the artificial delay
-    // in the graded/production version. Kept as a named constant so it's easy
-    // to find and change in one place.
-    private static final int SIMULATED_DB_DELAY_MS = 1500;
+    private static final int SIMULATED_DB_DELAY_MS = 0;
 
     @FXML private TextField titleField;
+    @FXML private Button searchOnlineButton;
     @FXML private ComboBox<String> genreCombo;
     @FXML private TextField yearField;
     @FXML private TextField ratingField;
@@ -32,12 +35,19 @@ public class AddMovieController {
     @FXML private Button saveButton;
 
     private final MovieDAO movieDAO = new MovieDAO();
+    private final OmdbService omdbService = new OmdbService();
     private Movie editingMovie = null;
 
-    // Same pattern as MovieListController: DB writes run on a background
-    // thread so the UI never freezes while saving.
     private final ExecutorService dbExecutor = Executors.newSingleThreadExecutor(runnable -> {
         Thread t = new Thread(runnable, "add-movie-db-worker");
+        t.setDaemon(true);
+        return t;
+    });
+
+    // Separate pool for network calls, so a slow/stuck OMDb request can
+    // never block a database save (or vice versa).
+    private final ExecutorService networkExecutor = Executors.newSingleThreadExecutor(runnable -> {
+        Thread t = new Thread(runnable, "omdb-network-worker");
         t.setDaemon(true);
         return t;
     });
@@ -81,6 +91,120 @@ public class AddMovieController {
         notesArea.setText(movie.getNotes());
         favoriteCheckBox.setSelected(movie.isFavorite());
     }
+
+    // ---------- Search Online (OMDb / Jackson) ----------
+
+    @FXML
+    private void handleSearchOnline() {
+        String title = titleField.getText().trim();
+        if (title.isEmpty()) {
+            errorLabel.setText("Enter a movie title first, then search online.");
+            return;
+        }
+
+        errorLabel.setText("Searching online...");
+        searchOnlineButton.setDisable(true);
+        saveButton.setDisable(true);
+
+        Task<OmdbMovieResult> task = new Task<>() {
+            @Override
+            protected OmdbMovieResult call() throws IOException {
+                return omdbService.searchByTitle(title);
+            }
+        };
+
+        task.setOnSucceeded(event -> {
+            searchOnlineButton.setDisable(false);
+            saveButton.setDisable(false);
+
+            OmdbMovieResult result = task.getValue();
+            if (result == null || !result.isSuccess()) {
+                String msg = (result != null && result.getError() != null)
+                        ? result.getError() : "Movie not found online.";
+                errorLabel.setText(msg);
+                return;
+            }
+
+            applySearchResult(result);
+            errorLabel.setText("Filled from online data — review before saving.");
+        });
+
+        task.setOnFailed(event -> {
+            searchOnlineButton.setDisable(false);
+            saveButton.setDisable(false);
+            errorLabel.setText("Could not reach OMDb. Check your internet connection.");
+            Throwable ex = task.getException();
+            if (ex != null) {
+                ex.printStackTrace();
+            }
+        });
+
+        networkExecutor.submit(task);
+    }
+
+    private void applySearchResult(OmdbMovieResult result) {
+        if (result.getTitle() != null && !result.getTitle().isBlank()) {
+            titleField.setText(result.getTitle());
+        }
+
+        String year = extractFirstYear(result.getYear());
+        if (!year.isEmpty()) {
+            yearField.setText(year);
+        }
+
+        if (result.getImdbRating() != null && !result.getImdbRating().equalsIgnoreCase("N/A")) {
+            try {
+                double parsedRating = Double.parseDouble(result.getImdbRating());
+                ratingField.setText(String.valueOf(parsedRating));
+            } catch (NumberFormatException ignored) {
+                // Leave the rating field as-is if OMDb's value isn't parseable
+            }
+        }
+
+        applyGenreFromOmdb(result.getGenre());
+
+        if (notesArea.getText().isBlank() && result.getPlot() != null
+                && !result.getPlot().equalsIgnoreCase("N/A")) {
+            notesArea.setText(result.getPlot());
+        }
+    }
+
+    // OMDb's "Year" field can be "2014", or a range like "2016–2020" for
+    // series. This pulls out just the first 4-digit number.
+    private String extractFirstYear(String omdbYear) {
+        if (omdbYear == null) {
+            return "";
+        }
+        Matcher matcher = Pattern.compile("\\d{4}").matcher(omdbYear);
+        return matcher.find() ? matcher.group() : "";
+    }
+
+    // OMDb returns comma-separated genres like "Drama, Romance". This app's
+    // dropdown only offers one genre per movie, so we take the first one
+    // that matches something already in the list (case-insensitive, with
+    // "Romance" mapped to this app's "Romantic" label). If nothing matches,
+    // the dropdown is left for the user to pick manually.
+    private void applyGenreFromOmdb(String omdbGenre) {
+        if (omdbGenre == null || omdbGenre.isBlank()) {
+            return;
+        }
+
+        for (String part : omdbGenre.split(",")) {
+            String candidate = part.trim();
+            if (candidate.equalsIgnoreCase("Romance")) {
+                candidate = "Romantic";
+            }
+
+            for (String appGenre : genreCombo.getItems()) {
+                if (appGenre.equalsIgnoreCase(candidate)) {
+                    genreCombo.setValue(appGenre);
+                    return;
+                }
+            }
+        }
+    }
+
+    // ---------- Save (unchanged logic, background-threaded) ----------
 
     @FXML
     private void handleSave() {
@@ -148,8 +272,6 @@ public class AddMovieController {
         String notes = notesArea.getText().trim();
         boolean favorite = favoriteCheckBox.isSelected();
 
-        // All validation passed on the UI thread (fast, doesn't touch the DB).
-        // The actual database write now runs on a background thread.
         double finalRating = myRating;
         int finalYear = year;
         double finalImdbRating = rating;
@@ -159,8 +281,6 @@ public class AddMovieController {
             protected Boolean call() throws InterruptedException {
                 DatabaseActivityMonitor.operationStarted();
                 try {
-                    // Simulated delay so background threading is visibly
-                    // demonstrable — SQLite writes are normally too fast to see.
                     if (SIMULATED_DB_DELAY_MS > 0) {
                         Thread.sleep(SIMULATED_DB_DELAY_MS);
                     }
@@ -216,7 +336,7 @@ public class AddMovieController {
 
     @FXML
     private void handleCancel() {
-        dbExecutor.shutdown();
+        shutdownExecutors();
         goToMovieList();
     }
 
@@ -226,6 +346,11 @@ public class AddMovieController {
         } catch (Exception e) {
             e.printStackTrace();
         }
+    }
+
+    private void shutdownExecutors() {
+        dbExecutor.shutdown();
+        networkExecutor.shutdown();
     }
 
     private void showAlert(Alert.AlertType type, String message) {
