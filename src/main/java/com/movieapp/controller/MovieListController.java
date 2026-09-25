@@ -10,6 +10,7 @@ import javafx.fxml.FXML;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.VBox;
+import javafx.scene.layout.BorderPane;
 
 import java.util.List;
 import java.util.Optional;
@@ -33,6 +34,7 @@ public class MovieListController {
     @FXML private CheckBox favoritesOnlyCheck;
     @FXML private Label statusLabel;
     @FXML private VBox loadingOverlay;
+    @FXML private BorderPane rootPane;
 
     private final MovieDAO movieDAO = new MovieDAO();
 
@@ -66,6 +68,15 @@ public class MovieListController {
         statusFilterCombo.setValue("All");
 
         loadAllMovies();
+        // Explicit responsive binding: the search field grows/shrinks as the
+        // window is resized, instead of staying pinned at a fixed pixel width.
+        // Clamped between 120 and 400 so it never becomes unusably small or
+        // absurdly wide on a very large window.
+        searchField.prefWidthProperty().bind(
+                rootPane.widthProperty()
+                        .multiply(0.18)
+                        .subtract(20)
+        );
     }
 
     // ---------- Loading overlay ----------

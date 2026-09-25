@@ -14,7 +14,7 @@
 <?import javafx.scene.layout.StackPane?>
 <?import javafx.scene.layout.VBox?>
 
-<BorderPane xmlns="http://javafx.com/javafx"
+<BorderPane fx:id="rootPane" xmlns="http://javafx.com/javafx"
             xmlns:fx="http://javafx.com/fxml"
             fx:controller="com.movieapp.controller.MovieListController">
 
@@ -26,7 +26,7 @@
             <Label text="Movie List" styleClass="title-label"/>
 
             <HBox spacing="8" alignment="CENTER_LEFT">
-                <TextField fx:id="searchField" promptText="Search by title..." prefWidth="150"/>
+                <TextField fx:id="searchField" promptText="Search by title..."/>
                 <Button text="Search" onAction="#handleSearch"/>
                 <ComboBox fx:id="genreFilterCombo" prefWidth="110"/>
                 <ComboBox fx:id="statusFilterCombo" prefWidth="100"/>
