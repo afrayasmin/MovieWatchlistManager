@@ -5,11 +5,13 @@
 <?import javafx.scene.control.CheckBox?>
 <?import javafx.scene.control.ComboBox?>
 <?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ProgressIndicator?>
 <?import javafx.scene.control.TableColumn?>
 <?import javafx.scene.control.TableView?>
 <?import javafx.scene.control.TextField?>
 <?import javafx.scene.layout.BorderPane?>
 <?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.StackPane?>
 <?import javafx.scene.layout.VBox?>
 
 <BorderPane xmlns="http://javafx.com/javafx"
@@ -38,20 +40,37 @@
     </top>
 
     <center>
-        <TableView fx:id="movieTable">
-            <columnResizePolicy>
-                <TableView fx:constant="CONSTRAINED_RESIZE_POLICY"/>
-            </columnResizePolicy>
-            <columns>
-                <TableColumn fx:id="titleColumn" text="Title" prefWidth="280" minWidth="150"/>
-                <TableColumn fx:id="genreColumn" text="Genre" prefWidth="100" minWidth="80"/>
-                <TableColumn fx:id="yearColumn" text="Year" prefWidth="70" minWidth="55" style="-fx-alignment: CENTER;"/>
-                <TableColumn fx:id="ratingColumn" text="IMDb" prefWidth="70" minWidth="55" style="-fx-alignment: CENTER;"/>
-                <TableColumn fx:id="myRatingColumn" text="My Rating" prefWidth="90" minWidth="70" style="-fx-alignment: CENTER;"/>
-                <TableColumn fx:id="statusColumn" text="Status" prefWidth="100" minWidth="80"/>
-                <TableColumn fx:id="favoriteColumn" text="⭐" prefWidth="55" minWidth="45" style="-fx-alignment: CENTER;"/>
-            </columns>
-        </TableView>
+        <!--
+          StackPane layers the TableView and a loading overlay on top of each
+          other in the same space. The overlay (loadingOverlay) starts hidden
+          (visible/managed = false) and the controller toggles it on/off
+          around every background database Task, so the user sees a visual
+          "busy" state during any DB read/write instead of just a disabled
+          table.
+        -->
+        <StackPane>
+            <TableView fx:id="movieTable">
+                <columnResizePolicy>
+                    <TableView fx:constant="CONSTRAINED_RESIZE_POLICY"/>
+                </columnResizePolicy>
+                <columns>
+                    <TableColumn fx:id="titleColumn" text="Title" prefWidth="280" minWidth="150"/>
+                    <TableColumn fx:id="genreColumn" text="Genre" prefWidth="100" minWidth="80"/>
+                    <TableColumn fx:id="yearColumn" text="Year" prefWidth="70" minWidth="55" style="-fx-alignment: CENTER;"/>
+                    <TableColumn fx:id="ratingColumn" text="IMDb" prefWidth="70" minWidth="55" style="-fx-alignment: CENTER;"/>
+                    <TableColumn fx:id="myRatingColumn" text="My Rating" prefWidth="90" minWidth="70" style="-fx-alignment: CENTER;"/>
+                    <TableColumn fx:id="statusColumn" text="Status" prefWidth="100" minWidth="80"/>
+                    <TableColumn fx:id="favoriteColumn" text="⭐" prefWidth="55" minWidth="45" style="-fx-alignment: CENTER;"/>
+                </columns>
+            </TableView>
+
+            <VBox fx:id="loadingOverlay" alignment="CENTER" spacing="10"
+                  style="-fx-background-color: rgba(0,0,0,0.55);"
+                  visible="false" managed="false">
+                <ProgressIndicator progress="-1.0" maxWidth="50" maxHeight="50"/>
+                <Label text="Loading..." textFill="WHITE" style="-fx-font-size: 14px;"/>
+            </VBox>
+        </StackPane>
     </center>
 
     <bottom>

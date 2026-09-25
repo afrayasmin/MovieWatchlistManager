@@ -9,6 +9,7 @@ import javafx.concurrent.Task;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
+import javafx.scene.layout.VBox;
 
 import java.util.List;
 import java.util.Optional;
@@ -31,6 +32,7 @@ public class MovieListController {
     @FXML private ComboBox<String> statusFilterCombo;
     @FXML private CheckBox favoritesOnlyCheck;
     @FXML private Label statusLabel;
+    @FXML private VBox loadingOverlay;
 
     private final MovieDAO movieDAO = new MovieDAO();
 
@@ -66,6 +68,18 @@ public class MovieListController {
         loadAllMovies();
     }
 
+    // ---------- Loading overlay ----------
+
+    private void showLoading() {
+        loadingOverlay.setVisible(true);
+        loadingOverlay.setManaged(true);
+    }
+
+    private void hideLoading() {
+        loadingOverlay.setVisible(false);
+        loadingOverlay.setManaged(false);
+    }
+
     // ---------- READ operations ----------
 
     // Submits a database query as a background Task, then safely applies the
@@ -75,17 +89,20 @@ public class MovieListController {
     private void runQueryInBackground(Task<List<Movie>> task) {
         movieTable.setDisable(true);
         statusLabel.setText("Loading...");
+        showLoading();
 
         task.setOnSucceeded(event -> {
             List<Movie> result = task.getValue();
             movieTable.setItems(FXCollections.observableArrayList(result));
             movieTable.setDisable(false);
             statusLabel.setText(result.size() + " movie(s)");
+            hideLoading();
         });
 
         task.setOnFailed(event -> {
             movieTable.setDisable(false);
             statusLabel.setText("Failed to load movies.");
+            hideLoading();
             Throwable ex = task.getException();
             if (ex != null) {
                 ex.printStackTrace();
@@ -168,6 +185,7 @@ public class MovieListController {
     // change. On failure, shows the given error message on the UI thread.
     private void runWriteInBackground(Task<Boolean> task, String failureMessage) {
         statusLabel.setText("Saving...");
+        showLoading();
 
         task.setOnSucceeded(event -> {
             boolean success = task.getValue();
@@ -175,12 +193,14 @@ public class MovieListController {
                 loadAllMovies();
             } else {
                 statusLabel.setText("");
+                hideLoading();
                 showAlert(Alert.AlertType.ERROR, failureMessage);
             }
         });
 
         task.setOnFailed(event -> {
             statusLabel.setText("");
+            hideLoading();
             showAlert(Alert.AlertType.ERROR, failureMessage);
             Throwable ex = task.getException();
             if (ex != null) {
