@@ -7,7 +7,7 @@ import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 
-public class MovieDAO {
+public class MovieDAO implements Crud<Movie> {
 
     private final GenreDAO genreDAO = new GenreDAO();
 
@@ -21,8 +21,11 @@ public class MovieDAO {
         JOIN genres g ON m.genre_id = g.id
         """;
 
+    // ===== Crud<Movie> implementation =====
+
     // CREATE
-    public boolean addMovie(Movie movie) {
+    @Override
+    public boolean add(Movie movie) {
         String sql = "INSERT INTO movies (title, genre_id, release_year, rating, my_rating, date_added, status, notes, favorite) " +
                 "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
@@ -51,7 +54,8 @@ public class MovieDAO {
     }
 
     // READ — all movies
-    public List<Movie> getAllMovies() {
+    @Override
+    public List<Movie> getAll() {
         List<Movie> movies = new ArrayList<>();
         String sql = BASE_SELECT + " ORDER BY m.id DESC";
 
@@ -69,6 +73,76 @@ public class MovieDAO {
 
         return movies;
     }
+
+    // UPDATE
+    @Override
+    public boolean update(Movie movie) {
+        String sql = "UPDATE movies SET title = ?, genre_id = ?, release_year = ?, rating = ?, my_rating = ?, " +
+                "status = ?, notes = ?, favorite = ? WHERE id = ?";
+
+        try (Connection conn = DatabaseConnection.connect()) {
+            int genreId = genreDAO.resolveGenreId(conn, movie.getGenre());
+
+            try (PreparedStatement ps = conn.prepareStatement(sql)) {
+                ps.setString(1, movie.getTitle());
+                ps.setInt(2, genreId);
+                ps.setInt(3, movie.getReleaseYear());
+                ps.setDouble(4, movie.getRating());
+                ps.setDouble(5, movie.getMyRating());
+                ps.setString(6, movie.getStatus());
+                ps.setString(7, movie.getNotes());
+                ps.setInt(8, movie.isFavorite() ? 1 : 0);
+                ps.setInt(9, movie.getId());
+
+                int rows = ps.executeUpdate();
+                return rows > 0;
+            }
+
+        } catch (SQLException e) {
+            System.out.println("Error updating movie: " + e.getMessage());
+            return false;
+        }
+    }
+
+    // DELETE
+    @Override
+    public boolean delete(int id) {
+        String sql = "DELETE FROM movies WHERE id = ?";
+
+        try (Connection conn = DatabaseConnection.connect();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setInt(1, id);
+            int rows = ps.executeUpdate();
+            return rows > 0;
+
+        } catch (SQLException e) {
+            System.out.println("Error deleting movie: " + e.getMessage());
+            return false;
+        }
+    }
+
+    // ===== Backward-compatible convenience wrappers =====
+    // Kept so existing controller code (addMovie(), getAllMovies(), etc.)
+    // doesn't need to change. They simply delegate to the interface methods.
+
+    public boolean addMovie(Movie movie) {
+        return add(movie);
+    }
+
+    public List<Movie> getAllMovies() {
+        return getAll();
+    }
+
+    public boolean updateMovie(Movie movie) {
+        return update(movie);
+    }
+
+    public boolean deleteMovie(int id) {
+        return delete(id);
+    }
+
+    // ===== Movie-specific queries (not part of the generic CRUD contract) =====
 
     // READ — search by title
     public List<Movie> searchMovies(String keyword) {
@@ -129,52 +203,6 @@ public class MovieDAO {
         }
 
         return movies;
-    }
-
-    // UPDATE
-    public boolean updateMovie(Movie movie) {
-        String sql = "UPDATE movies SET title = ?, genre_id = ?, release_year = ?, rating = ?, my_rating = ?, " +
-                "status = ?, notes = ?, favorite = ? WHERE id = ?";
-
-        try (Connection conn = DatabaseConnection.connect()) {
-            int genreId = genreDAO.resolveGenreId(conn, movie.getGenre());
-
-            try (PreparedStatement ps = conn.prepareStatement(sql)) {
-                ps.setString(1, movie.getTitle());
-                ps.setInt(2, genreId);
-                ps.setInt(3, movie.getReleaseYear());
-                ps.setDouble(4, movie.getRating());
-                ps.setDouble(5, movie.getMyRating());
-                ps.setString(6, movie.getStatus());
-                ps.setString(7, movie.getNotes());
-                ps.setInt(8, movie.isFavorite() ? 1 : 0);
-                ps.setInt(9, movie.getId());
-
-                int rows = ps.executeUpdate();
-                return rows > 0;
-            }
-
-        } catch (SQLException e) {
-            System.out.println("Error updating movie: " + e.getMessage());
-            return false;
-        }
-    }
-
-    // DELETE
-    public boolean deleteMovie(int id) {
-        String sql = "DELETE FROM movies WHERE id = ?";
-
-        try (Connection conn = DatabaseConnection.connect();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
-
-            ps.setInt(1, id);
-            int rows = ps.executeUpdate();
-            return rows > 0;
-
-        } catch (SQLException e) {
-            System.out.println("Error deleting movie: " + e.getMessage());
-            return false;
-        }
     }
 
     // Toggle to Unwatched — always clears the personal rating.
@@ -238,8 +266,6 @@ public class MovieDAO {
     }
 
     // Helper — converts one ResultSet row into a Movie object.
-    // Unchanged from before: "genre" here comes from the genres table via
-    // the JOIN, not from the old movies.genre text column.
     private Movie mapRowToMovie(ResultSet rs) throws SQLException {
         return new Movie(
                 rs.getInt("id"),
