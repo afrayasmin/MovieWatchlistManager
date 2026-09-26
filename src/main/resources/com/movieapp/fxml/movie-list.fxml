@@ -30,7 +30,7 @@
                 <Button text="Search" onAction="#handleSearch"/>
                 <ComboBox fx:id="genreFilterCombo" prefWidth="110"/>
                 <ComboBox fx:id="statusFilterCombo" prefWidth="100"/>
-                <CheckBox fx:id="favoritesOnlyCheck" text="Favorites Only" textFill="WHITE"/>
+                <CheckBox fx:id="favoritesOnlyCheck" text="Favorites Only"/>
                 <Button text="Apply Filter" onAction="#handleFilter"/>
                 <Button text="Reset" onAction="#handleReset" styleClass="button-secondary"/>
             </HBox>

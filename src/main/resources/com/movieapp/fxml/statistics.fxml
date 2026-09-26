@@ -22,10 +22,13 @@
     </top>
 
     <left>
-        <VBox spacing="15" alignment="TOP_LEFT" prefWidth="380">
+        <VBox spacing="14" alignment="TOP_LEFT" prefWidth="340" styleClass="recent-panel">
             <padding>
                 <Insets top="30" bottom="30" left="30" right="30"/>
             </padding>
+            <BorderPane.margin>
+                <Insets top="25" bottom="25" left="25"/>
+            </BorderPane.margin>
 
             <Label fx:id="totalLabel" styleClass="stat-label" wrapText="true"/>
             <Label fx:id="watchedLabel" styleClass="stat-label" wrapText="true"/>
