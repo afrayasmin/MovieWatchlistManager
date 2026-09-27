@@ -23,9 +23,6 @@ public class Main extends Application {
     public static Object switchScene(String fxmlPath, String title) throws Exception {
         FXMLLoader loader = new FXMLLoader(Main.class.getResource(fxmlPath));
         Scene scene = new Scene(loader.load(), 1000, 650);
-        scene.getStylesheets().add(
-                Main.class.getResource("/com/movieapp/css/style.css").toExternalForm()
-        );
         stage.setTitle(title);
         stage.setScene(scene);
         return loader.getController();

@@ -5,10 +5,14 @@ import com.movieapp.database.DatabaseActivityMonitor;
 import com.movieapp.model.Movie;
 import com.movieapp.model.OmdbMovieResult;
 import com.movieapp.service.OmdbService;
+import com.movieapp.ui.UiTheme;
 import javafx.collections.FXCollections;
 import javafx.concurrent.Task;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
+import javafx.scene.layout.BorderPane;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.VBox;
 
 import java.io.IOException;
 import java.time.LocalDate;
@@ -22,17 +26,31 @@ public class AddMovieController {
 
     private static final int SIMULATED_DB_DELAY_MS = 0;
 
+    @FXML private BorderPane rootPane;
+    @FXML private VBox headerBox;
+    @FXML private Label titleLabel;
+
+    @FXML private Label titleFieldLabel;
     @FXML private TextField titleField;
     @FXML private Button searchOnlineButton;
+    @FXML private Label genreLabel;
     @FXML private ComboBox<String> genreCombo;
+    @FXML private Label yearLabel;
     @FXML private TextField yearField;
+    @FXML private Label ratingLabel;
     @FXML private TextField ratingField;
+    @FXML private Label myRatingLabel;
     @FXML private TextField myRatingField;
+    @FXML private Label statusLabel;
     @FXML private ComboBox<String> statusCombo;
+    @FXML private Label notesLabel;
     @FXML private TextArea notesArea;
     @FXML private CheckBox favoriteCheckBox;
     @FXML private Label errorLabel;
+
+    @FXML private HBox buttonBar;
     @FXML private Button saveButton;
+    @FXML private Button cancelButton;
 
     private final MovieDAO movieDAO = new MovieDAO();
     private final OmdbService omdbService = new OmdbService();
@@ -44,8 +62,6 @@ public class AddMovieController {
         return t;
     });
 
-    // Separate pool for network calls, so a slow/stuck OMDb request can
-    // never block a database save (or vice versa).
     private final ExecutorService networkExecutor = Executors.newSingleThreadExecutor(runnable -> {
         Thread t = new Thread(runnable, "omdb-network-worker");
         t.setDaemon(true);
@@ -54,6 +70,8 @@ public class AddMovieController {
 
     @FXML
     public void initialize() {
+        applyStyling();
+
         genreCombo.setItems(FXCollections.observableArrayList(
                 "Action", "Comedy", "Drama", "Horror", "Sci-Fi", "Thriller", "Animation", "Romantic"
         ));
@@ -62,6 +80,44 @@ public class AddMovieController {
 
         statusCombo.valueProperty().addListener((obs, oldVal, newVal) -> updateMyRatingFieldState(newVal));
         updateMyRatingFieldState(statusCombo.getValue());
+    }
+
+    private void applyStyling() {
+        UiTheme.fillBackground(rootPane, UiTheme.BG_ROOT);
+
+        UiTheme.fillGradientBackground(headerBox,
+                UiTheme.horizontalGradient(UiTheme.BG_HEADER_1, UiTheme.BG_HEADER_2), 0);
+        headerBox.setEffect(UiTheme.headerShadow());
+        UiTheme.styleLabel(titleLabel, UiTheme.TEXT_PRIMARY, UiTheme.titleFont());
+
+        for (Label l : new Label[]{titleFieldLabel, genreLabel, yearLabel, ratingLabel,
+                myRatingLabel, statusLabel, notesLabel}) {
+            UiTheme.styleLabel(l, UiTheme.TEXT_SECONDARY, UiTheme.bodyFont());
+        }
+
+        UiTheme.styleTextInput(titleField, UiTheme.TEXT_SECONDARY);
+        UiTheme.styleTextInput(yearField, UiTheme.TEXT_SECONDARY);
+        UiTheme.styleTextInput(ratingField, UiTheme.TEXT_SECONDARY);
+        UiTheme.styleTextInput(myRatingField, UiTheme.TEXT_SECONDARY);
+        UiTheme.styleTextInput(notesArea, UiTheme.TEXT_SECONDARY);
+
+        UiTheme.styleComboBox(genreCombo);
+        UiTheme.styleComboBox(statusCombo);
+        UiTheme.styleComboBoxText(genreCombo);
+        UiTheme.styleComboBoxText(statusCombo);
+        UiTheme.styleComboBoxPopup(genreCombo);
+        UiTheme.styleComboBoxPopup(statusCombo);
+
+        UiTheme.styleCheckBoxBox(favoriteCheckBox);
+
+        UiTheme.styleLabel(errorLabel, UiTheme.RED_1, javafx.scene.text.Font.font("Segoe UI",
+                javafx.scene.text.FontWeight.BOLD, 12));
+
+        UiTheme.stylePrimaryButton(searchOnlineButton);
+        UiTheme.stylePrimaryButton(saveButton);
+        UiTheme.styleSecondaryButton(cancelButton);
+
+        UiTheme.fillBackground(buttonBar, UiTheme.BG_HEADER_1);
     }
 
     private void updateMyRatingFieldState(String status) {
@@ -157,7 +213,6 @@ public class AddMovieController {
                 double parsedRating = Double.parseDouble(result.getImdbRating());
                 ratingField.setText(String.valueOf(parsedRating));
             } catch (NumberFormatException ignored) {
-                // Leave the rating field as-is if OMDb's value isn't parseable
             }
         }
 
@@ -169,8 +224,6 @@ public class AddMovieController {
         }
     }
 
-    // OMDb's "Year" field can be "2014", or a range like "2016–2020" for
-    // series. This pulls out just the first 4-digit number.
     private String extractFirstYear(String omdbYear) {
         if (omdbYear == null) {
             return "";
@@ -179,11 +232,6 @@ public class AddMovieController {
         return matcher.find() ? matcher.group() : "";
     }
 
-    // OMDb returns comma-separated genres like "Drama, Romance". This app's
-    // dropdown only offers one genre per movie, so we take the first one
-    // that matches something already in the list (case-insensitive, with
-    // "Romance" mapped to this app's "Romantic" label). If nothing matches,
-    // the dropdown is left for the user to pick manually.
     private void applyGenreFromOmdb(String omdbGenre) {
         if (omdbGenre == null || omdbGenre.isBlank()) {
             return;
@@ -204,7 +252,7 @@ public class AddMovieController {
         }
     }
 
-    // ---------- Save (unchanged logic, background-threaded) ----------
+    // ---------- Save ----------
 
     @FXML
     private void handleSave() {

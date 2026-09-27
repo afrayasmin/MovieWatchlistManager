@@ -8,21 +8,21 @@
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.VBox?>
 
-<BorderPane xmlns="http://javafx.com/javafx"
+<BorderPane fx:id="rootPane" xmlns="http://javafx.com/javafx"
             xmlns:fx="http://javafx.com/fxml"
             fx:controller="com.movieapp.controller.StatisticsController">
 
     <top>
-        <VBox alignment="CENTER" styleClass="header">
+        <VBox fx:id="headerBox" alignment="CENTER">
             <padding>
                 <Insets top="15" bottom="15"/>
             </padding>
-            <Label text="Movie Statistics" styleClass="title-label"/>
+            <Label fx:id="titleLabel" text="Movie Statistics"/>
         </VBox>
     </top>
 
     <left>
-        <VBox spacing="14" alignment="TOP_LEFT" prefWidth="340" styleClass="recent-panel">
+        <VBox fx:id="statsPanel" spacing="14" alignment="TOP_LEFT" prefWidth="340">
             <padding>
                 <Insets top="30" bottom="30" left="30" right="30"/>
             </padding>
@@ -30,13 +30,13 @@
                 <Insets top="25" bottom="25" left="25"/>
             </BorderPane.margin>
 
-            <Label fx:id="totalLabel" styleClass="stat-label" wrapText="true"/>
-            <Label fx:id="watchedLabel" styleClass="stat-label" wrapText="true"/>
-            <Label fx:id="unwatchedLabel" styleClass="stat-label" wrapText="true"/>
-            <Label fx:id="avgRatingLabel" styleClass="stat-label" wrapText="true"/>
-            <Label fx:id="avgMyRatingLabel" styleClass="stat-label" wrapText="true"/>
-            <Label fx:id="commonGenreLabel" styleClass="stat-label" wrapText="true"/>
-            <Label fx:id="highestRatedLabel" styleClass="stat-label" wrapText="true"/>
+            <Label fx:id="totalLabel" wrapText="true"/>
+            <Label fx:id="watchedLabel" wrapText="true"/>
+            <Label fx:id="unwatchedLabel" wrapText="true"/>
+            <Label fx:id="avgRatingLabel" wrapText="true"/>
+            <Label fx:id="avgMyRatingLabel" wrapText="true"/>
+            <Label fx:id="commonGenreLabel" wrapText="true"/>
+            <Label fx:id="highestRatedLabel" wrapText="true"/>
         </VBox>
     </left>
 
@@ -48,11 +48,11 @@
     </center>
 
     <bottom>
-        <HBox alignment="CENTER" styleClass="button-bar">
+        <HBox fx:id="buttonBar" alignment="CENTER">
             <padding>
                 <Insets top="15" bottom="15"/>
             </padding>
-            <Button text="Back to Dashboard" onAction="#handleBack"/>
+            <Button fx:id="backButton" text="Back to Dashboard" onAction="#handleBack"/>
         </HBox>
     </bottom>
 

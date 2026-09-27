@@ -4,13 +4,17 @@ import com.movieapp.Main;
 import com.movieapp.dao.MovieDAO;
 import com.movieapp.database.DatabaseActivityMonitor;
 import com.movieapp.model.Movie;
+import com.movieapp.ui.UiTheme;
 import javafx.collections.FXCollections;
 import javafx.concurrent.Task;
 import javafx.fxml.FXML;
+import javafx.geometry.Insets;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
-import javafx.scene.layout.VBox;
 import javafx.scene.layout.BorderPane;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.VBox;
+import javafx.scene.paint.Color;
 
 import java.util.List;
 import java.util.Optional;
@@ -18,6 +22,10 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 public class MovieListController {
+
+    @FXML private BorderPane rootPane;
+    @FXML private VBox headerBox;
+    @FXML private Label titleLabel;
 
     @FXML private TableView<Movie> movieTable;
     @FXML private TableColumn<Movie, String> titleColumn;
@@ -29,20 +37,28 @@ public class MovieListController {
     @FXML private TableColumn<Movie, String> favoriteColumn;
 
     @FXML private TextField searchField;
+    @FXML private Button searchButton;
     @FXML private ComboBox<String> genreFilterCombo;
     @FXML private ComboBox<String> statusFilterCombo;
     @FXML private CheckBox favoritesOnlyCheck;
+    @FXML private Button applyFilterButton;
+    @FXML private Button resetButton;
     @FXML private Label statusLabel;
+
     @FXML private VBox loadingOverlay;
-    @FXML private BorderPane rootPane;
+    @FXML private ProgressIndicator loadingSpinner;
+    @FXML private Label loadingLabel;
+
+    @FXML private HBox buttonBar;
+    @FXML private Button addButton;
+    @FXML private Button editButton;
+    @FXML private Button deleteButton;
+    @FXML private Button toggleWatchedButton;
+    @FXML private Button toggleFavoriteButton;
+    @FXML private Button backButton;
 
     private final MovieDAO movieDAO = new MovieDAO();
 
-    // A small thread pool that runs every database operation (reads AND writes)
-    // off the JavaFX Application Thread, so nothing about talking to SQLite
-    // ever freezes the UI. A single named worker thread is plenty for this
-    // app's scale — operations are queued and run one after another, which
-    // also avoids concurrent writes to the same SQLite file.
     private final ExecutorService dbExecutor = Executors.newSingleThreadExecutor(runnable -> {
         Thread t = new Thread(runnable, "db-worker");
         t.setDaemon(true);
@@ -51,6 +67,8 @@ public class MovieListController {
 
     @FXML
     public void initialize() {
+        applyStyling();
+
         titleColumn.setCellValueFactory(new PropertyValueFactory<>("title"));
         genreColumn.setCellValueFactory(new PropertyValueFactory<>("genre"));
         yearColumn.setCellValueFactory(new PropertyValueFactory<>("releaseYear"));
@@ -58,6 +76,15 @@ public class MovieListController {
         myRatingColumn.setCellValueFactory(new PropertyValueFactory<>("myRatingDisplay"));
         statusColumn.setCellValueFactory(new PropertyValueFactory<>("status"));
         favoriteColumn.setCellValueFactory(new PropertyValueFactory<>("favoriteDisplay"));
+
+        movieTable.setRowFactory(UiTheme.darkRowFactory());
+        titleColumn.setCellFactory(UiTheme.darkCellFactory());
+        genreColumn.setCellFactory(UiTheme.darkCellFactory());
+        yearColumn.setCellFactory(UiTheme.darkCellFactory());
+        ratingColumn.setCellFactory(UiTheme.darkCellFactory());
+        myRatingColumn.setCellFactory(UiTheme.darkCellFactory());
+        statusColumn.setCellFactory(UiTheme.darkCellFactory());
+        favoriteColumn.setCellFactory(UiTheme.darkCellFactory());
 
         genreFilterCombo.setItems(FXCollections.observableArrayList(
                 "All", "Action", "Comedy", "Drama", "Horror", "Sci-Fi", "Thriller", "Animation", "Romantic"
@@ -68,15 +95,63 @@ public class MovieListController {
         statusFilterCombo.setValue("All");
 
         loadAllMovies();
-        // Explicit responsive binding: the search field grows/shrinks as the
-        // window is resized, instead of staying pinned at a fixed pixel width.
-        // Clamped between 120 and 400 so it never becomes unusably small or
-        // absurdly wide on a very large window.
+
         searchField.prefWidthProperty().bind(
                 rootPane.widthProperty()
                         .multiply(0.18)
                         .subtract(20)
         );
+
+        Runnable tryStyleHeader = new Runnable() {
+            @Override
+            public void run() {
+                if (movieTable.lookup(".column-header-background") != null) {
+                    UiTheme.styleTableHeader(movieTable);
+                } else {
+                    javafx.application.Platform.runLater(this);
+                }
+            }
+        };
+        javafx.application.Platform.runLater(tryStyleHeader);
+    }
+
+    private void applyStyling() {
+        UiTheme.fillBackground(rootPane, UiTheme.BG_ROOT);
+
+        UiTheme.fillGradientBackground(headerBox,
+                UiTheme.horizontalGradient(UiTheme.BG_HEADER_1, UiTheme.BG_HEADER_2), 0);
+        headerBox.setEffect(UiTheme.headerShadow());
+        UiTheme.styleLabel(titleLabel, UiTheme.TEXT_PRIMARY, UiTheme.titleFont());
+        UiTheme.styleLabel(statusLabel, UiTheme.TEXT_MUTED, javafx.scene.text.Font.font("Segoe UI", 11));
+
+        UiTheme.styleTextInput(searchField, UiTheme.TEXT_SECONDARY);
+
+        UiTheme.stylePrimaryButton(searchButton);
+        UiTheme.stylePrimaryButton(applyFilterButton);
+        UiTheme.styleSecondaryButton(resetButton);
+
+        UiTheme.styleComboBox(genreFilterCombo);
+        UiTheme.styleComboBox(statusFilterCombo);
+        UiTheme.styleComboBoxText(genreFilterCombo);
+        UiTheme.styleComboBoxText(statusFilterCombo);
+        UiTheme.styleComboBoxPopup(genreFilterCombo);
+        UiTheme.styleComboBoxPopup(statusFilterCombo);
+
+        UiTheme.styleCheckBoxBox(favoritesOnlyCheck);
+
+        UiTheme.styleCardWithBorder(movieTable, UiTheme.BG_PANEL, UiTheme.BORDER, 8);
+
+        loadingOverlay.setBackground(new javafx.scene.layout.Background(
+                new javafx.scene.layout.BackgroundFill(Color.rgb(0, 0, 0, 0.55), javafx.scene.layout.CornerRadii.EMPTY, Insets.EMPTY)));
+        UiTheme.styleLabel(loadingLabel, UiTheme.TEXT_WHITE, javafx.scene.text.Font.font("Segoe UI", 14));
+
+        UiTheme.fillBackground(buttonBar, UiTheme.BG_HEADER_1);
+        UiTheme.stylePrimaryButton(addButton);
+        UiTheme.stylePrimaryButton(editButton);
+        UiTheme.styleDangerButton(deleteButton);
+        UiTheme.stylePrimaryButton(toggleWatchedButton);
+        UiTheme.stylePrimaryButton(toggleFavoriteButton);
+        UiTheme.styleSecondaryButton(backButton);
     }
 
     // ---------- Loading overlay ----------
@@ -93,10 +168,6 @@ public class MovieListController {
 
     // ---------- READ operations ----------
 
-    // Submits a database query as a background Task, then safely applies the
-    // result back on the JavaFX Application Thread once it completes.
-    // Task's onSucceeded/onFailed callbacks are guaranteed to run on the UI
-    // thread, which is what makes this safe without manual Platform.runLater.
     private void runQueryInBackground(Task<List<Movie>> task) {
         movieTable.setDisable(true);
         statusLabel.setText("Loading...");
@@ -191,9 +262,6 @@ public class MovieListController {
 
     // ---------- WRITE operations ----------
 
-    // Submits a database write (delete/toggle/etc.) as a background Task.
-    // On success, reloads the table (itself threaded) so the UI reflects the
-    // change. On failure, shows the given error message on the UI thread.
     private void runWriteInBackground(Task<Boolean> task, String failureMessage) {
         statusLabel.setText("Saving...");
         showLoading();
@@ -365,8 +433,6 @@ public class MovieListController {
 
     @FXML
     private void handleBack() {
-        // Shut the thread pool down cleanly when leaving this screen —
-        // a new one is created if the user navigates back here again.
         dbExecutor.shutdown();
         try {
             Main.switchScene("/com/movieapp/fxml/dashboard.fxml", "Movie Watchlist Manager");

@@ -3,11 +3,16 @@ package com.movieapp.controller;
 import com.movieapp.Main;
 import com.movieapp.dao.MovieDAO;
 import com.movieapp.model.Movie;
+import com.movieapp.ui.UiTheme;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.scene.chart.PieChart;
+import javafx.scene.control.Button;
 import javafx.scene.control.Label;
+import javafx.scene.layout.BorderPane;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.VBox;
 
 import java.util.List;
 import java.util.Map;
@@ -15,6 +20,11 @@ import java.util.stream.Collectors;
 
 public class StatisticsController {
 
+    @FXML private BorderPane rootPane;
+    @FXML private VBox headerBox;
+    @FXML private Label titleLabel;
+
+    @FXML private VBox statsPanel;
     @FXML private Label totalLabel;
     @FXML private Label watchedLabel;
     @FXML private Label unwatchedLabel;
@@ -25,10 +35,15 @@ public class StatisticsController {
     @FXML private PieChart statusPieChart;
     @FXML private PieChart genrePieChart;
 
+    @FXML private HBox buttonBar;
+    @FXML private Button backButton;
+
     private final MovieDAO movieDAO = new MovieDAO();
 
     @FXML
     public void initialize() {
+        applyStyling();
+
         List<Movie> movies = movieDAO.getAllMovies();
 
         if (movies.isEmpty()) {
@@ -55,8 +70,6 @@ public class StatisticsController {
                 .orElse(0);
         long ratedCount = movies.stream().filter(m -> m.getMyRating() > 0).count();
 
-        // LinkedHashMap-free grouping is fine here — genreCounts feeds both
-        // "Most Common Genre" and now the genre PieChart below.
         Map<String, Long> genreCounts = movies.stream()
                 .collect(Collectors.groupingBy(Movie::getGenre, Collectors.counting()));
         String mostCommonGenre = genreCounts.entrySet().stream()
@@ -87,18 +100,50 @@ public class StatisticsController {
                 new PieChart.Data("Watched", watched),
                 new PieChart.Data("Unwatched", unwatched)
         );
-        statusPieChart.setData(pieData);
-        statusPieChart.setTitle("Watch Status");
 
-        // Genre breakdown — one slice per genre that has at least one movie,
-        // sorted alphabetically by genre name for a stable, readable legend.
         ObservableList<PieChart.Data> genreData = genreCounts.entrySet().stream()
                 .sorted(Map.Entry.comparingByKey())
                 .map(entry -> new PieChart.Data(entry.getKey() + " (" + entry.getValue() + ")", entry.getValue()))
                 .collect(Collectors.toCollection(FXCollections::observableArrayList));
 
+        // Animation disabled BEFORE data is applied, so PieChart doesn't
+        // recreate/animate its internal label nodes while we're styling.
+        statusPieChart.setAnimated(false);
+        genrePieChart.setAnimated(false);
+
+        statusPieChart.setData(pieData);
+        statusPieChart.setTitle("Watch Status");
+
         genrePieChart.setData(genreData);
         genrePieChart.setTitle("Genre Breakdown");
+
+        // Listens for the chart's internal nodes appearing (slices, labels,
+        // legend, title) and re-applies dark styling every time, rather
+        // than guessing when JavaFX has finished building them.
+        UiTheme.bindDarkChartStyling(statusPieChart, UiTheme.PURPLE_1, UiTheme.ORANGE_1);
+        UiTheme.bindDarkChartStyling(genrePieChart, UiTheme.PIE_PALETTE);
+    }
+
+    private void applyStyling() {
+        UiTheme.fillBackground(rootPane, UiTheme.BG_ROOT);
+
+        UiTheme.fillGradientBackground(headerBox,
+                UiTheme.horizontalGradient(UiTheme.BG_HEADER_1, UiTheme.BG_HEADER_2), 0);
+        headerBox.setEffect(UiTheme.headerShadow());
+        UiTheme.styleLabel(titleLabel, UiTheme.TEXT_PRIMARY, UiTheme.titleFont());
+
+        UiTheme.styleCardWithBorder(statsPanel, UiTheme.BG_CARD, UiTheme.BORDER_LIGHT, 12);
+        statsPanel.setEffect(UiTheme.panelShadow());
+        for (Label l : new Label[]{totalLabel, watchedLabel, unwatchedLabel, avgRatingLabel,
+                avgMyRatingLabel, commonGenreLabel, highestRatedLabel}) {
+            UiTheme.styleLabel(l, UiTheme.TEXT_PRIMARY, UiTheme.statLabelFont());
+        }
+
+        UiTheme.fillBackground(statusPieChart, UiTheme.BG_ROOT);
+        UiTheme.fillBackground(genrePieChart, UiTheme.BG_ROOT);
+
+        UiTheme.fillBackground(buttonBar, UiTheme.BG_HEADER_1);
+        UiTheme.stylePrimaryButton(backButton);
     }
 
     @FXML

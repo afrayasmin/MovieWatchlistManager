@@ -19,35 +19,27 @@
             fx:controller="com.movieapp.controller.MovieListController">
 
     <top>
-        <VBox spacing="10" styleClass="header">
+        <VBox fx:id="headerBox" spacing="10">
             <padding>
                 <Insets top="15" bottom="15" left="20" right="20"/>
             </padding>
-            <Label text="Movie List" styleClass="title-label"/>
+            <Label fx:id="titleLabel" text="Movie List"/>
 
             <HBox spacing="8" alignment="CENTER_LEFT">
                 <TextField fx:id="searchField" promptText="Search by title..."/>
-                <Button text="Search" onAction="#handleSearch"/>
+                <Button fx:id="searchButton" text="Search" onAction="#handleSearch"/>
                 <ComboBox fx:id="genreFilterCombo" prefWidth="110"/>
                 <ComboBox fx:id="statusFilterCombo" prefWidth="100"/>
                 <CheckBox fx:id="favoritesOnlyCheck" text="Favorites Only"/>
-                <Button text="Apply Filter" onAction="#handleFilter"/>
-                <Button text="Reset" onAction="#handleReset" styleClass="button-secondary"/>
+                <Button fx:id="applyFilterButton" text="Apply Filter" onAction="#handleFilter"/>
+                <Button fx:id="resetButton" text="Reset" onAction="#handleReset"/>
             </HBox>
 
-            <Label fx:id="statusLabel" text="" styleClass="status-label"/>
+            <Label fx:id="statusLabel" text=""/>
         </VBox>
     </top>
 
     <center>
-        <!--
-          StackPane layers the TableView and a loading overlay on top of each
-          other in the same space. The overlay (loadingOverlay) starts hidden
-          (visible/managed = false) and the controller toggles it on/off
-          around every background database Task, so the user sees a visual
-          "busy" state during any DB read/write instead of just a disabled
-          table.
-        -->
         <StackPane>
             <TableView fx:id="movieTable">
                 <columnResizePolicy>
@@ -56,34 +48,33 @@
                 <columns>
                     <TableColumn fx:id="titleColumn" text="Title" prefWidth="280" minWidth="150"/>
                     <TableColumn fx:id="genreColumn" text="Genre" prefWidth="100" minWidth="80"/>
-                    <TableColumn fx:id="yearColumn" text="Year" prefWidth="70" minWidth="55" style="-fx-alignment: CENTER;"/>
-                    <TableColumn fx:id="ratingColumn" text="IMDb" prefWidth="70" minWidth="55" style="-fx-alignment: CENTER;"/>
-                    <TableColumn fx:id="myRatingColumn" text="My Rating" prefWidth="90" minWidth="70" style="-fx-alignment: CENTER;"/>
+                    <TableColumn fx:id="yearColumn" text="Year" prefWidth="70" minWidth="55"/>
+                    <TableColumn fx:id="ratingColumn" text="IMDb" prefWidth="70" minWidth="55"/>
+                    <TableColumn fx:id="myRatingColumn" text="My Rating" prefWidth="90" minWidth="70"/>
                     <TableColumn fx:id="statusColumn" text="Status" prefWidth="100" minWidth="80"/>
-                    <TableColumn fx:id="favoriteColumn" text="⭐" prefWidth="55" minWidth="45" style="-fx-alignment: CENTER;"/>
+                    <TableColumn fx:id="favoriteColumn" text="⭐" prefWidth="55" minWidth="45"/>
                 </columns>
             </TableView>
 
             <VBox fx:id="loadingOverlay" alignment="CENTER" spacing="10"
-                  style="-fx-background-color: rgba(0,0,0,0.55);"
                   visible="false" managed="false">
-                <ProgressIndicator progress="-1.0" maxWidth="50" maxHeight="50"/>
-                <Label text="Loading..." textFill="WHITE" style="-fx-font-size: 14px;"/>
+                <ProgressIndicator fx:id="loadingSpinner" progress="-1.0" maxWidth="50" maxHeight="50"/>
+                <Label fx:id="loadingLabel" text="Loading..."/>
             </VBox>
         </StackPane>
     </center>
 
     <bottom>
-        <HBox alignment="CENTER" spacing="10" styleClass="button-bar">
+        <HBox fx:id="buttonBar" alignment="CENTER" spacing="10">
             <padding>
                 <Insets top="15" bottom="15"/>
             </padding>
-            <Button text="Add" onAction="#handleAdd"/>
-            <Button text="Edit" onAction="#handleEdit"/>
-            <Button text="Delete" onAction="#handleDelete" styleClass="button-danger"/>
-            <Button text="Toggle Watched" onAction="#handleToggleStatus"/>
-            <Button text="Toggle Favorite" onAction="#handleToggleFavorite"/>
-            <Button text="Back to Dashboard" onAction="#handleBack" styleClass="button-secondary"/>
+            <Button fx:id="addButton" text="Add" onAction="#handleAdd"/>
+            <Button fx:id="editButton" text="Edit" onAction="#handleEdit"/>
+            <Button fx:id="deleteButton" text="Delete" onAction="#handleDelete"/>
+            <Button fx:id="toggleWatchedButton" text="Toggle Watched" onAction="#handleToggleStatus"/>
+            <Button fx:id="toggleFavoriteButton" text="Toggle Favorite" onAction="#handleToggleFavorite"/>
+            <Button fx:id="backButton" text="Back to Dashboard" onAction="#handleBack"/>
         </HBox>
     </bottom>
 
