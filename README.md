@@ -23,6 +23,7 @@ Built as an academic project to demonstrate JavaFX UI development, MVC architect
 - **Background threading** — all database reads and writes, and OMDb network calls, run off the JavaFX Application Thread via `Task` and an `ExecutorService`, so the UI never freezes during a query, save, or online lookup
 - **Loading feedback** — a `StackPane` overlay with a spinner appears over the movie table during background database operations, giving clear visual feedback instead of just a disabled view
 - **Responsive layout** — the search field's width is explicitly bound to the window's width via `widthProperty()`, so it resizes proportionally instead of staying fixed
+- **Dark themed UI** — every screen is styled entirely in Java code (no external CSS file), using JavaFX's own `Background`, `Border`, `Font`, `Paint`, and `Effect` APIs — gradients, drop shadows, hover/pressed states, and a consistent dark purple/gold palette are all built programmatically
 
 ## Tech Stack
 
@@ -30,7 +31,7 @@ Built as an academic project to demonstrate JavaFX UI development, MVC architect
 - **JavaFX 21** — UI framework (FXML + Scene Builder-compatible layouts)
 - **Maven** — build and dependency management
 - **SQLite** (via Xerial JDBC driver) — local persistent storage
-- **CSS** — custom styling for a modern look
+- **Pure JavaFX Java API styling** — no external stylesheet; all visual styling (colors, gradients, shadows, fonts, hover states) is applied directly in Java via a central `UiTheme` helper class
 - **java.util.concurrent** — `ExecutorService` and `javafx.concurrent.Task` for background database and network operations
 - **HTTP + JSON** — Java's built-in `HttpClient` and Jackson (`jackson-databind`) for calling the OMDb API and parsing its response
 
@@ -57,19 +58,22 @@ com.movieapp
 │   └── GenreDAO.java              # Database access layer for genres
 ├── service/
 │   └── OmdbService.java           # Calls the OMDb API over HTTP and parses the JSON response
+├── ui/
+│   └── UiTheme.java                # Central palette, fonts, and styling helpers — all applied via Java code, no CSS
 └── database/
     ├── DatabaseConnection.java        # SQLite connection + schema setup/migrations
     └── DatabaseActivityMonitor.java   # Synchronized counter tracking in-flight DB operations across threads
 ```
 
-FXML files live under `src/main/resources/com/movieapp/fxml/`, and styling is in `src/main/resources/com/movieapp/css/style.css`.
+FXML files live under `src/main/resources/com/movieapp/fxml/`. There is no external stylesheet — every screen's colors, fonts, gradients, and effects are applied directly in each controller's `initialize()` method, using reusable helper methods from `UiTheme`.
 
 ### Key design decisions
 
 - **DAO pattern** separates all SQL logic from the UI layer — controllers never touch JDBC directly
 - **`Crud<T>` interface** — `MovieDAO` implements a generic `add` / `getAll` / `update` / `delete` contract, formalizing what a data-access class is expected to provide. `GenreDAO` intentionally does **not** implement it: it has no update/delete lifecycle (genres are only read or resolved/created on the fly from the movie form), so forcing the interface onto it would mean writing meaningless stub methods rather than a genuine contract
 - **`BaseDAO` abstract class** — both `MovieDAO` and `GenreDAO` extend it to share the connection-acquisition and error-logging pattern every DAO method repeated, removing real duplication rather than adding an abstract class purely for its own sake
-- **`Main.switchScene()`** is a shared helper that loads FXML, applies the stylesheet, and returns the controller — enabling data passing between screens (e.g., populating the edit form with a selected movie's data)
+- **`Main.switchScene()`** is a shared helper that loads FXML and returns the controller — enabling data passing between screens (e.g., populating the edit form with a selected movie's data)
+- **`UiTheme` styling helper** — rather than an external `.css` stylesheet, every screen is styled programmatically: `UiTheme` centralizes the color palette, fonts, gradients, and reusable methods (e.g. `stylePrimaryButton()`, `styleTextInput()`, `darkRowFactory()`) that each controller calls from its `applyStyling()` method. A small number of built-in JavaFX controls (`TextField`/`TextArea` text color, `ComboBox` selected-text color, `CheckBox` tick-mark fill) expose no Java-only setter at all for those specific properties; for those cases only, a minimal inline style string is set directly on that one node — no stylesheet is loaded anywhere in the app
 - **Schema migrations** — new columns and tables (`favorite`, `my_rating`, `genres`, `genre_id`) are added via `ALTER TABLE` / `CREATE TABLE` calls guarded with error handling, so the app upgrades existing databases without data loss. Existing movies' free-text genre values are automatically migrated into the new `genre_id` foreign key on first run after the upgrade
 - **Relational integrity** — `movies.genre_id` is a foreign key referencing `genres.id`, a genuine one-to-many relationship (one genre, many movies), with an index on `genre_id` since every movie query joins on it
 - **Background threading** — every `MovieDAO` call from the controllers, and every OMDb lookup, is wrapped in a `javafx.concurrent.Task` and submitted to a single-thread `ExecutorService`, keeping the UI responsive. `DatabaseActivityMonitor` demonstrates safe access to a shared mutable resource across threads via `synchronized` methods
@@ -143,7 +147,7 @@ cd MovieWatchlistManager
 | JSON parsing | Jackson deserialization of the OMDb response into `OmdbMovieResult` |
 | Input validation | `AddMovieController.java` |
 | Alerts (Info / Warning / Confirmation) | Throughout controllers |
-| CSS Styling | `style.css` |
+| Java-based UI styling (no CSS) | `UiTheme.java` — colors, gradients, shadows, fonts, and hover states applied via JavaFX's Java API |
 | Event Handling | All `onAction` button handlers |
 | Thread & Runnable | `javafx.concurrent.Task` submitted to `ExecutorService` |
 | Thread lifecycle | `Task` success/failure callbacks, visible loading/saving states |
