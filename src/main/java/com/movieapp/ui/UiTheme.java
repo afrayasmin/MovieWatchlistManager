@@ -298,8 +298,49 @@ public class UiTheme {
         if (header != null) {
             fillBackground(header, Color.web("#22233c"));
         }
+        for (javafx.scene.Node cell : tableView.lookupAll(".column-header")) {
+            if (cell instanceof Region region) {
+                fillBackground(region, Color.web("#22233c"));
+            }
+            for (javafx.scene.Node labelNode : ((Region) cell).lookupAll(".label")) {
+                if (labelNode instanceof Label label) {
+                    label.setTextFill(TEXT_SECONDARY);
+                    label.setFont(Font.font("Segoe UI", FontWeight.BOLD, 12));
+                }
+            }
+        }
+        for (javafx.scene.Node filler : tableView.lookupAll(".filler")) {
+            if (filler instanceof Region region) {
+                fillBackground(region, Color.web("#22233c"));
+            }
+        }
+        for (javafx.scene.Node track : tableView.lookupAll(".scroll-bar .track")) {
+            if (track instanceof Region region) {
+                fillBackground(region, BG_PANEL);
+            }
+        }
+        for (javafx.scene.Node thumb : tableView.lookupAll(".scroll-bar .thumb")) {
+            if (thumb instanceof Region region) {
+                fillBackground(region, BORDER_LIGHT);
+            }
+        }
+        for (javafx.scene.Node button : tableView.lookupAll(".scroll-bar .increment-button, .scroll-bar .decrement-button")) {
+            if (button instanceof Region region) {
+                fillBackground(region, BG_PANEL);
+            }
+        }
     }
 
+    // Re-applies header/scrollbar styling every time the table's item list
+    // changes — scrollbars are created lazily by JavaFX only once content
+    // actually overflows, so a single one-time pass can miss them.
+    public static <T> void bindDarkTableChrome(TableView<T> tableView) {
+        Runnable apply = () -> styleTableHeader(tableView);
+        tableView.getItems().addListener((javafx.collections.ListChangeListener<T>) change -> {
+            javafx.application.Platform.runLater(apply);
+        });
+        javafx.application.Platform.runLater(apply);
+    }
     // ===== Text input styling =====
 
     // TextInputControl (TextField/TextArea) exposes no Java-only setter for
@@ -385,8 +426,12 @@ public class UiTheme {
         });
         checkBox.selectedProperty().addListener((obs, was, isSelected) -> {
             javafx.scene.Node mark = checkBox.lookup(".mark");
-            if (mark != null && isSelected) {
-                mark.setStyle("-fx-background-color: " + toWebString(PURPLE_1) + ";");
+            if (mark != null) {
+                if (isSelected) {
+                    mark.setStyle("-fx-background-color: " + toWebString(PURPLE_1) + ";");
+                } else {
+                    mark.setStyle(""); // clear the inline override so the default stylesheet hides it again
+                }
             }
         });
     }
@@ -443,5 +488,18 @@ public class UiTheme {
         chart.getChildrenUnmodifiable().addListener(
                 (javafx.collections.ListChangeListener<javafx.scene.Node>) change -> apply.run());
         apply.run();
+    }
+
+    // TextArea has a separate internal scrollable content region (its
+    // .content sub-node) that TextField doesn't have, with its own white
+    // default background. This locates and fills it directly via Java
+    // Background API once the control has a skin.
+    public static void styleTextAreaContent(javafx.scene.control.TextArea textArea) {
+        javafx.application.Platform.runLater(() -> {
+            javafx.scene.Node content = textArea.lookup(".content");
+            if (content instanceof Region region) {
+                fillBackground(region, BG_FIELD);
+            }
+        });
     }
 }

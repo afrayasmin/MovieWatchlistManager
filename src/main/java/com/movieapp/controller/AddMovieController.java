@@ -100,6 +100,7 @@ public class AddMovieController {
         UiTheme.styleTextInput(ratingField, UiTheme.TEXT_SECONDARY);
         UiTheme.styleTextInput(myRatingField, UiTheme.TEXT_SECONDARY);
         UiTheme.styleTextInput(notesArea, UiTheme.TEXT_SECONDARY);
+        UiTheme.styleTextAreaContent(notesArea);
 
         UiTheme.styleComboBox(genreCombo);
         UiTheme.styleComboBox(statusCombo);

@@ -102,17 +102,7 @@ public class MovieListController {
                         .subtract(20)
         );
 
-        Runnable tryStyleHeader = new Runnable() {
-            @Override
-            public void run() {
-                if (movieTable.lookup(".column-header-background") != null) {
-                    UiTheme.styleTableHeader(movieTable);
-                } else {
-                    javafx.application.Platform.runLater(this);
-                }
-            }
-        };
-        javafx.application.Platform.runLater(tryStyleHeader);
+        UiTheme.bindDarkTableChrome(movieTable);
     }
 
     private void applyStyling() {
