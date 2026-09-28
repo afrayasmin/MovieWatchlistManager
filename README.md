@@ -23,7 +23,7 @@ Built as an academic project to demonstrate JavaFX UI development, MVC architect
 - **Background threading** — all database reads and writes, and OMDb network calls, run off the JavaFX Application Thread via `Task` and an `ExecutorService`, so the UI never freezes during a query, save, or online lookup
 - **Loading feedback** — a `StackPane` overlay with a spinner appears over the movie table during background database operations, giving clear visual feedback instead of just a disabled view
 - **Responsive layout** — the search field's width is explicitly bound to the window's width via `widthProperty()`, so it resizes proportionally instead of staying fixed
-- **Dark themed UI** — every screen is styled entirely in Java code (no external CSS file), using JavaFX's own `Background`, `Border`, `Font`, `Paint`, and `Effect` APIs — gradients, drop shadows, hover/pressed states, and a consistent dark purple/gold palette are all built programmatically
+- **Dark themed UI** — every screen is styled in Java code with no external stylesheet, using JavaFX's own `Background`, `Border`, `Font`, `Paint`, and `Effect` APIs — gradients, drop shadows, hover/pressed states, and a consistent dark purple/gold palette are all built programmatically
 
 ## Tech Stack
 
@@ -33,7 +33,7 @@ Built as an academic project to demonstrate JavaFX UI development, MVC architect
 - **SQLite** (via Xerial JDBC driver) — local persistent storage
 - **Pure JavaFX Java API styling** — no external stylesheet; all visual styling (colors, gradients, shadows, fonts, hover states) is applied directly in Java via a central `UiTheme` helper class
 - **java.util.concurrent** — `ExecutorService` and `javafx.concurrent.Task` for background database and network operations
-- **HTTP + JSON** — Java's built-in `HttpClient` and Jackson (`jackson-databind`) for calling the OMDb API and parsing its response
+- **HTTP + JSON** — Java's built-in `HttpURLConnection` and Jackson (`jackson-databind`) for calling the OMDb API and parsing its response
 
 ## Architecture
 
@@ -59,7 +59,7 @@ com.movieapp
 ├── service/
 │   └── OmdbService.java           # Calls the OMDb API over HTTP and parses the JSON response
 ├── ui/
-│   └── UiTheme.java                # Central palette, fonts, and styling helpers — all applied via Java code, no CSS
+│   └── UiTheme.java               # Central palette, fonts, and styling helpers — all applied via Java code
 └── database/
     ├── DatabaseConnection.java        # SQLite connection + schema setup/migrations
     └── DatabaseActivityMonitor.java   # Synchronized counter tracking in-flight DB operations across threads
@@ -73,7 +73,7 @@ FXML files live under `src/main/resources/com/movieapp/fxml/`. There is no exter
 - **`Crud<T>` interface** — `MovieDAO` implements a generic `add` / `getAll` / `update` / `delete` contract, formalizing what a data-access class is expected to provide. `GenreDAO` intentionally does **not** implement it: it has no update/delete lifecycle (genres are only read or resolved/created on the fly from the movie form), so forcing the interface onto it would mean writing meaningless stub methods rather than a genuine contract
 - **`BaseDAO` abstract class** — both `MovieDAO` and `GenreDAO` extend it to share the connection-acquisition and error-logging pattern every DAO method repeated, removing real duplication rather than adding an abstract class purely for its own sake
 - **`Main.switchScene()`** is a shared helper that loads FXML and returns the controller — enabling data passing between screens (e.g., populating the edit form with a selected movie's data)
-- **`UiTheme` styling helper** — rather than an external `.css` stylesheet, every screen is styled programmatically: `UiTheme` centralizes the color palette, fonts, gradients, and reusable methods (e.g. `stylePrimaryButton()`, `styleTextInput()`, `darkRowFactory()`) that each controller calls from its `applyStyling()` method. A small number of built-in JavaFX controls (`TextField`/`TextArea` text color, `ComboBox` selected-text color, `CheckBox` tick-mark fill) expose no Java-only setter at all for those specific properties; for those cases only, a minimal inline style string is set directly on that one node — no stylesheet is loaded anywhere in the app
+- **`UiTheme` styling helper** — rather than an external `.css` stylesheet, every screen is styled programmatically: `UiTheme` centralizes the color palette, fonts, gradients, and reusable methods (e.g. `stylePrimaryButton()`, `styleTextInput()`, `darkRowFactory()`) that each controller calls from its `applyStyling()` method. A small number of built-in JavaFX controls (`TextField`/`TextArea` text color, `ComboBox` selected-text color, `CheckBox` tick-mark fill) expose no Java-only setter at all for those specific properties; for those cases only, a minimal inline style string is set directly on that one node — no stylesheet is loaded anywhere in the app. Likewise, a few built-in sub-parts (table header, scrollbars, chart legend) are located by their internal node name and then colored through the normal Java API.
 - **Schema migrations** — new columns and tables (`favorite`, `my_rating`, `genres`, `genre_id`) are added via `ALTER TABLE` / `CREATE TABLE` calls guarded with error handling, so the app upgrades existing databases without data loss. Existing movies' free-text genre values are automatically migrated into the new `genre_id` foreign key on first run after the upgrade
 - **Relational integrity** — `movies.genre_id` is a foreign key referencing `genres.id`, a genuine one-to-many relationship (one genre, many movies), with an index on `genre_id` since every movie query joins on it
 - **Background threading** — every `MovieDAO` call from the controllers, and every OMDb lookup, is wrapped in a `javafx.concurrent.Task` and submitted to a single-thread `ExecutorService`, keeping the UI responsive. `DatabaseActivityMonitor` demonstrates safe access to a shared mutable resource across threads via `synchronized` methods
@@ -108,19 +108,22 @@ CREATE INDEX idx_movies_genre_id ON movies(genre_id);
 ### Prerequisites
 - JDK 17 or higher
 - No separate Maven installation needed — the project includes the Maven Wrapper
-- An OMDb API key (free at https://www.omdbapi.com/apikey.aspx) if you want to use the "Search Online" feature
+- Internet access for the "Search Online" feature. The project ships with a free-tier OMDb API key in `OmdbService.java`; if it ever stops working, get your own free key at https://www.omdbapi.com/apikey.aspx and replace the `API_KEY` constant
 
 ### Steps
 
 1. Clone the repository:
 
+```
 git clone https://github.com/afrayasmin/MovieWatchlistManager.git
 cd MovieWatchlistManager
-
+```
 
 2. Run the application:
 
+```
 .\mvnw.cmd clean javafx:run
+```
 
 (On Mac/Linux: `./mvnw clean javafx:run`)
 
@@ -147,7 +150,7 @@ cd MovieWatchlistManager
 | JSON parsing | Jackson deserialization of the OMDb response into `OmdbMovieResult` |
 | Input validation | `AddMovieController.java` |
 | Alerts (Info / Warning / Confirmation) | Throughout controllers |
-| Java-based UI styling (no CSS) | `UiTheme.java` — colors, gradients, shadows, fonts, and hover states applied via JavaFX's Java API |
+| Java-based UI styling (no stylesheet) | `UiTheme.java` — colors, gradients, shadows, fonts, and hover states applied via JavaFX's Java API |
 | Event Handling | All `onAction` button handlers |
 | Thread & Runnable | `javafx.concurrent.Task` submitted to `ExecutorService` |
 | Thread lifecycle | `Task` success/failure callbacks, visible loading/saving states |
